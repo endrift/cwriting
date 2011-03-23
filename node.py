@@ -27,6 +27,7 @@ class Document(object):
 class Node(object):
 	def __init__(self, name):
 		self._attrs = {}
+		self._props = PropertySet()
 		self._children = []
 		self._name = name
 		self._text = None
@@ -38,6 +39,9 @@ class Node(object):
 		elt = doc.createElement(self._name)
 		for (k, v) in self._attrs.iteritems():
 			elt.setAttribute(k, str(v))
+
+		for n in self._props.genNodes(doc):
+			elt.appendChild(n)
 
 		for c in self._children:
 			#print repr(c)
@@ -106,39 +110,51 @@ class Object(Node):
 		self.name = name
 		self.setAttr('name', name)
 		self._obj = obj
-		self._objAttrs = { 'Placement': obj.getPlacement() }
-		self.setBool('Visible', True)
-		self.setColor(255, 255, 255)
-		self.setBool('Lighting', False)
-		self.setBool('ClickThrough', True)
-		self.setBool('AroundSelfAxis', False)
-		self.setScalar('Scale', 1.0)
+		self._props.copy(obj._props)
 		self._content = Node('Content')
-
-	def setBool(self, name, v):
-		self._objAttrs[name] = Boolean(name, v)
-
-	def setColor(self, r, g, b):
-		self._objAttrs['Color'] = Color('Color', (r, g, b))
-
-	def setScalar(self, name, v):
-		self._objAttrs[name] = Scalar(name, v)
+		self._link = obj.link
 
 	def genNode(self, doc):
 		self.addChild(self._content)
-		for c in self._objAttrs.itervalues():
-			self.addChild(c)
+		if self._link:
+			self.addChild(self._link)
 		return super(Object, self).genNode(doc)
 
 class Property(Node):
 	def genDiff(self, current, next):
-		d = self._genDiff(current, next['time'] - current['time'], next)
-		if not d:
-			return None
+		return self._genDiff(current, next['time'] - current['time'], next)
 
-		ta = TimedActions(current['time'])
-		ta.addChild(d)
-		return ta
+class PropertySet(object):
+	def __init__(self):
+		self._props = {}
+
+	def clear(self):
+		self._props.clear()
+
+	def copy(self, other):
+		self._props.update(other._props)
+
+	def setProperty(self, name, p):
+		self._props[name] = p
+
+	def getProperty(self, name):
+		return self._props[name]
+
+	def setBool(self, name, v):
+		self._props[name] = Boolean(name, v)
+
+	def setColor(self, name, r, g, b):
+		self._props[name] = Color(name, (r, g, b))
+
+	def setScalar(self, name, v):
+		self._props[name] = Scalar(name, v)
+
+	def genNodes(self, doc):
+		props = []
+		for p in self._props.itervalues():
+			props.append(p.genNode(doc))
+
+		return props
 
 class Placement(Property):
 	def __init__(self, name=None, start=(0, 0, 0)):
@@ -183,10 +199,11 @@ class Group(Node):
 		self.addChild(n)
 
 class Timeline(Node):
-	def __init__(self, name):
+	def __init__(self, name, autostart=False):
 		super(Timeline, self).__init__('Timeline')
 		self.name = name
 		self.setAttr('name', name)
+		self.setAttrFromNode(Boolean('start-immediately', autostart))
 
 	def addAction(self, start, action):
 		ta = TimedActions(start)
@@ -204,6 +221,25 @@ class TimedActions(Node):
 
 	def addAction(self, action):
 		self.addChild(action)
+
+class Link(Node):
+	def __init__(self):
+		super(Link, self).__init__('LinkRoot')
+		self._root = Node('Link')
+		self._root._props.setBool('Enabled', True)
+		self._root._props.setBool('RemainEnabled', True)
+		self._root._props.setColor('EnabledColor', 0, 128, 255)
+		self._root._props.setColor('SelectedColor', 255, 0, 0)
+		self.addChild(self._root)
+
+	def addAction(self, action):
+		n = Node('Actions')
+		clicks = Node('Clicks')
+		a = Node('any')
+		clicks.addChild(a)
+		n.addChild(clicks)
+		n.addChild(action)
+		self._root.addChild(n)
 
 class Global(Node):
 	def __init__(self):
@@ -365,3 +401,6 @@ class AxisRotation(Node):
 
 	def __eq__(self, rhs):
 		return self.axis == rhs.axis and self.angle == rhs.angle
+
+	def rotate(self, other):
+		pass

@@ -34,10 +34,11 @@ class Document(object):
 		xml.save(filename)
 
 class Timeline(object):
-	def __init__(self, name):
+	def __init__(self, name, autostart=False):
 		self._time = 0.0
 		self.name = name
 		self._loop = False
+		self._autostart = autostart
 
 		self._first = {}
 		self._current = {}
@@ -50,7 +51,9 @@ class Timeline(object):
 			if key in current:
 				diff = current[key]['value'].genDiff(current[key], next)
 				if diff:
-					self._changes.append(diff)
+					ta = node.TimedActions(current[key]['time'])
+					ta.addAction(diff)
+					self._changes.append(ta)
 
 			current[key] = next
 
@@ -97,7 +100,7 @@ class Timeline(object):
 		if not self._changes:
 			self.freeze()
 
-		topNode = node.Timeline(self.name)
+		topNode = node.Timeline(self.name, self._autostart)
 
 		for change in self._changes:
 			topNode.addTimedAction(change)
@@ -107,26 +110,34 @@ class Timeline(object):
 class Object(object):
 	def __init__(self, name):
 		self.name = name
-		self._placement = node.Placement()
-		self._visibility = node.Boolean('Visible', True)
+		self._props = node.PropertySet()
+		self._props.setProperty('Placement', node.Placement())
+		self._props.setBool('Visible', True)
+		self._props.setColor('Color', 255, 255, 255)
+		self._props.setBool('Lighting', False)
+		self._props.setBool('ClickThrough', True)
+		self._props.setBool('AroundSelfAxis', False)
+		self._props.setScalar('Scale', 1.0)
+		self.link = None
 
 	def copyAttributes(self, other):
-		self._placement = copy.deepcopy(other._placement)
+		self._props.clear()
+		self._props.copy(other._props)
 
 	def setPlacement(self, placement):
-		self._placement = copy.deepcopy(placement)
+		self._props.setProperty('Placement', copy.deepcopy(placement))
 
 	def getPlacement(self):
-		return self._placement
+		return self._props.getProperty('Placement')
 
 	def setVisibility(self, v):
-		self._visibility.setValue(v)
+		self._props.getProperty('Visible').setValue(v)
 
 	def keyPlacement(self, timeline):
-		timeline.key('placement', self, self._placement)
+		timeline.key('Placement', self, self._props.getProperty('Placement'))
 
 	def keyVisibility(self, timeline):
-		timeline.key('visibility', self, self._visibility)
+		timeline.key('Visible', self, self._props.getProperty('Visible'))
 
 class Text(Object):
 	def __init__(self, name, text):
