@@ -144,12 +144,15 @@ class Text(Object):
 			if c == '\n':
 				i = 0
 				j += 1
-
-			l = Text('%s_%05d' % (self.name, i), c)
-			l.copyAttributes(self)
-			if curve:
-				offset = curve.get(i, j)
-				l.move(offset)
+				l = None
+			elif c == ' ':
+				l = None
+			else:
+				l = Text('%s_%05d' % (self.name, i), c)
+				l.copyAttributes(self)
+				if curve:
+					offset = curve.get(i, j)
+					l.move(offset)
 			self._letters.append(l)
 			i += 1
 
@@ -162,7 +165,8 @@ class Text(Object):
 		nodes = []
 		if self._letters:
 			for l in self._letters:
-				nodes.extend(l.distill())
+				if l:
+					nodes.extend(l.distill())
 		else:
 			nodes = [node.Text(self.name, self)]
 
