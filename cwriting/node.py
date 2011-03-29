@@ -176,6 +176,20 @@ class Placement(Property):
 		self.position = [l + r for (l, r) in zip(self.position, rhs.position)]
 		self.rotation.rotate(rhs.rotation)
 
+	def genCurve(self, end, curve):
+		diffPos = [r - l for (l, r) in zip(self.position, end.position)]
+		# TODO diff rotation
+		diffRot = None
+		def move(t):
+			tAfter = curve(t)
+			pos = [(1 - c)*s + c*e for (s, e, c) in zip([0, 0, 0], diffPos, tAfter)]
+			placement = copy.deepcopy(self)
+			placement.move(Placement(start=pos))
+			print placement.position
+			return placement
+
+		return move
+
 	def genNode(self, doc):
 		self.clearChildren()
 		if self.name:

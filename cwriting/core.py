@@ -1,5 +1,6 @@
 import node
 import copy
+import curve
 
 class Document(object):
 	def __init__(self):
@@ -8,7 +9,7 @@ class Document(object):
 		self._times = []
 
 	def registerObject(self, obj):
-		self._objs.append(copy.copy(obj)) # TODO should this be a deep copy?
+		self._objs.append(copy.deepcopy(obj))
 
 	def registerTimeline(self, obj):
 		self._times.append(obj)
@@ -43,6 +44,8 @@ class Timeline(object):
 		self._first = {}
 		self._current = {}
 		self._previous = []
+
+		self._instants = []
 
 		self._changes = []
 
@@ -79,6 +82,11 @@ class Timeline(object):
 
 		self._current[key] = data
 
+	def changeTimeline(self, other, action='start'):
+		ta = node.TimedActions(self._time)
+		ta.addAction(node.TimerChange(other))
+		self._instants.append(ta)
+
 	def freeze(self, loop=False):
 		self._changes = []
 		self._loop = loop
@@ -89,6 +97,9 @@ class Timeline(object):
 
 		for next in self._current.itervalues():
 			self._genDiff(current, next)
+
+		for i in self._instants:
+			self._changes.append(i)
 
 		# TODO looping
 		if loop:
@@ -106,6 +117,46 @@ class Timeline(object):
 			topNode.addTimedAction(change)
 
 		return topNode
+
+class Tweener(object):
+	_t = 0
+	def __init__(self):
+		self._timeline = Timeline('tween:%d' % Tweener._t)
+		Tweener._t += 1
+		self.grain = 0.1
+		self.adaptive = False
+		self._curve = None
+		self._builtCurve = None
+		self._obj = None
+		self._startState = None
+		self._endState = None
+		self._prop = None
+
+	def setObject(self, obj, prop, endState):
+		self._obj = obj
+		self._prop = prop
+		self._endState = endState
+		self._startState = obj.get(prop)
+
+	def setCurve(self, curve):
+		self._curve = curve
+		self._builtCurve = self._startState.genCurve(self._endState, curve)
+
+	def getTimeline(self):
+		return self._timeline
+
+	def tween(self, duration):
+		def frange(end, step):
+			start = 0
+			while start <= end:
+				yield start
+				start += step
+
+		for t in frange(duration + self.grain, self.grain):
+			v = self._builtCurve(t/duration)
+			self._obj.set(self._prop, v)
+			self._obj.key(self._prop, self._timeline)
+			self._timeline.advance(self.grain)
 
 class Object(object):
 	def __init__(self, name):
@@ -130,14 +181,26 @@ class Object(object):
 	def getPlacement(self):
 		return self._props.getProperty('Placement')
 
-	def setVisibility(self, v):
-		self._props.getProperty('Visible').setValue(v)
-
 	def keyPlacement(self, timeline):
 		timeline.key('Placement', self, self._props.getProperty('Placement'))
 
+	def setVisibility(self, v):
+		self._props.getProperty('Visible').setValue(v)
+
 	def keyVisibility(self, timeline):
 		timeline.key('Visible', self, self._props.getProperty('Visible'))
+
+	def setScale(self, v):
+		self._props.getProperty('Scale').setValue(v)
+
+	def set(self, prop, v):
+		getattr(self, 'set' + prop)(v)
+
+	def get(self, prop):
+		return getattr(self, 'get' + prop)()
+
+	def key(self, prop, timeline):
+		getattr(self, 'key' + prop)(timeline)
 
 class Text(Object):
 	def __init__(self, name, text):
@@ -162,7 +225,7 @@ class Text(Object):
 				l = Text('%s_%05d' % (self.name, i), c)
 				l.copyAttributes(self)
 				if curve:
-					offset = curve.get(i, j)
+					offset = curve(i)
 					l.move(offset)
 			self._letters.append(l)
 			i += 1
