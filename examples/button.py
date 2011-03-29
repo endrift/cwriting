@@ -10,11 +10,9 @@ def generateButton(doc, text):
 	tl_post = core.Timeline(text.name + '_post')
 	doc.registerTimeline(tl_post)
 	
-	
 	text.link = node.Link()
 	text.link.addAction(node.TimerChange(tl_post, 'start'))
-	doc.registerObject(t)
-	
+	doc.registerObject(text)
 	
 	text.keyVisibility(tl_pre)
 	text.keyPlacement(tl_pre)
