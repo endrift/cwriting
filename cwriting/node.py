@@ -185,7 +185,6 @@ class Placement(Property):
 			pos = [(1 - c)*s + c*e for (s, e, c) in zip([0, 0, 0], diffPos, tAfter)]
 			placement = copy.deepcopy(self)
 			placement.move(Placement(start=pos))
-			print placement.position
 			return placement
 
 		return move

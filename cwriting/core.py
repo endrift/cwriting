@@ -4,9 +4,18 @@ import curve
 
 class Document(object):
 	def __init__(self):
+		self._x = 0
 		self._objs = []
 		self._groups = []
 		self._times = []
+		self._firstScene = None
+
+	def addScene(self, (name, rootTimeline), isFirst=False):
+		t = Timeline('scene:' + name)
+		self.registerTimeline(t)
+		t.changeTimeline(rootTimeline)
+		if isFirst:
+			self._firstScene = rootTimeline
 
 	def registerObject(self, obj):
 		self._objs.append(copy.deepcopy(obj))
@@ -27,8 +36,18 @@ class Document(object):
 		for timeline in self._times:
 			story.addTimeline(timeline.distill())
 
+		if self._firstScene:
+			first = Timeline('scene:_autostart', True)
+			first.changeTimeline(self._firstScene)
+			story.addTimeline(first.distill())
+
 		doc.setRoot(story.genNode(doc.getNode()))
 		return doc
+
+	def next(self):
+		x = self._x
+		self._x += 1
+		return x
 
 	def save(self, filename):
 		xml = self.distill()
@@ -87,6 +106,11 @@ class Timeline(object):
 		ta.addAction(node.TimerChange(other))
 		self._instants.append(ta)
 
+	def startScene(self, scene):
+		# lolhax
+		s = Timeline('scene:' + scene)
+		self.changeTimeline(s)
+
 	def freeze(self, loop=False):
 		self._changes = []
 		self._loop = loop
@@ -101,7 +125,6 @@ class Timeline(object):
 		for i in self._instants:
 			self._changes.append(i)
 
-		# TODO looping
 		if loop:
 			ta = node.TimedActions(self._time)
 			ta.addAction(node.TimerChange(self))
@@ -123,7 +146,7 @@ class Tweener(object):
 	def __init__(self):
 		self._timeline = Timeline('tween:%d' % Tweener._t)
 		Tweener._t += 1
-		self.grain = 0.1
+		self.grain = 0.2
 		self.adaptive = False
 		self._curve = None
 		self._builtCurve = None
@@ -148,7 +171,7 @@ class Tweener(object):
 	def tween(self, duration):
 		def frange(end, step):
 			start = 0
-			while start <= end:
+			while start < end:
 				yield start
 				start += step
 
@@ -163,7 +186,7 @@ class Object(object):
 		self.name = name
 		self._props = node.PropertySet()
 		self._props.setProperty('Placement', node.Placement())
-		self._props.setBool('Visible', True)
+		self._props.setBool('Visible', False)
 		self._props.setColor('Color', 255, 255, 255)
 		self._props.setBool('Lighting', False)
 		self._props.setBool('ClickThrough', True)
