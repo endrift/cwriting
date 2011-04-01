@@ -132,7 +132,7 @@ class PropertySet(object):
 		self._props.clear()
 
 	def copy(self, other):
-		self._props.update(other._props)
+		self._props.update(copy.deepcopy(other._props))
 
 	def setProperty(self, name, p):
 		self._props[name] = p
@@ -381,8 +381,12 @@ class Boolean(Value):
 		self.setValue(value)
 
 	def setValue(self, value):
+		assert(value is not self)
 		self._v = value
 		self.setText('true' if value else 'false')
+
+	def genCurve(self, end, curve):
+		return (lambda t: end.getValue() if curve(t) > 0 else self.getValue())
 
 class Scalar(Value):
 	def __init__(self, name, value=False):

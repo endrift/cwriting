@@ -181,6 +181,35 @@ class Tweener(object):
 			self._obj.key(self._prop, self._timeline)
 			self._timeline.advance(self.grain)
 
+class TweenSet(object):
+	_x = 0
+	def __init__(self):
+		self._tweens = []
+
+	def addTween(self, tween):
+		self._tweens.append(tween)
+
+	def register(self, d):
+		for tween in self._tweens:
+			if tween:
+				d.registerTimeline(tween.getTimeline())
+
+	def setGrain(self, grain):
+		for tween in self._tweens:
+			if tween:
+				tween.grain = grain
+
+	def tweenAcross(self, diff, duration):
+		master = Timeline('tweenset:%i' % TweenSet._x)
+		TweenSet._x += 1
+		for tween in self._tweens:
+			if tween:
+				tween.tween(duration)
+				master.changeTimeline(tween.getTimeline())
+			master.advance(diff)
+
+		return master
+
 class Object(object):
 	def __init__(self, name):
 		self.name = name
@@ -210,6 +239,9 @@ class Object(object):
 	def setVisibility(self, v):
 		self._props.getProperty('Visible').setValue(v)
 
+	def getVisibility(self):
+		return self._props.getProperty('Visible')
+
 	def keyVisibility(self, timeline):
 		timeline.key('Visible', self, self._props.getProperty('Visible'))
 
@@ -236,27 +268,45 @@ class Text(Object):
 
 	def breakApart(self, curve=None):
 		self._letters = []
-		i, j = (0, 0)
+		i, j, k = (0, 0, 0)
 		for c in self._text:
 			if c == '\n':
-				i = 0
+				i = -1
 				j += 1
 				l = None
 			elif c == ' ':
 				l = None
 			else:
-				l = Text('%s_%05d' % (self.name, i), c)
+				l = Text('%s_%05d' % (self.name, k), c)
 				l.copyAttributes(self)
 				if curve:
 					offset = curve(i)
-					l.move(offset)
+					l.getPlacement().move(offset)
+				else:
+					# TODO set scale
+					offset = node.Placement(start=(i*0.18, -j*0.28, 0))
+					l.getPlacement().move(offset)
 			self._letters.append(l)
 			i += 1
+			k += 1
 
 		return self._letters
 
 	def getText(self):
 		return self._text
+
+	def createTweenSet(self, prop, makeEndState, makeCurve):
+		tweenSet = TweenSet()
+		for l in self._letters:
+			if l:
+				tween = Tweener()
+				tween.setObject(l, prop, makeEndState(l))
+				tween.setCurve(makeCurve(l))
+				tweenSet.addTween(tween)
+			else:
+				tweenSet.addTween(None)
+
+		return tweenSet
 
 	def distill(self):
 		nodes = []
