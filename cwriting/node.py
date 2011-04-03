@@ -176,6 +176,11 @@ class Placement(Property):
 		self.position = [l + r for (l, r) in zip(self.position, rhs.position)]
 		self.rotation.rotate(rhs.rotation)
 
+	def moved(self, rhs):
+		lhs = copy.deepcopy(self)
+		lhs.move(rhs)
+		return lhs
+
 	def genCurve(self, end, curve):
 		diffPos = [r - l for (l, r) in zip(self.position, end.position)]
 		# TODO diff rotation

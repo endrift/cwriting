@@ -266,29 +266,58 @@ class Text(Object):
 		self.depth = 0
 		self._letters = []
 
+	def _tweenLetter(self, l, tweenSet, prop, makeEndState, makeCurve):
+		if l:
+			tween = Tweener()
+			tween.setObject(l, prop, makeEndState(l))
+			tween.setCurve(makeCurve(l))
+			tweenSet.addTween(tween)
+		else:
+			tweenSet.addTween(None)
+
 	def breakApart(self, curve=None):
+		xOffset = 0.18
+		def collect(line):
+			offset = None
+			if self.halign == 'center':
+				offset = node.Placement(start=(len(line)*0.5*-xOffset, 0, 0))
+			elif self.halign == 'right':
+				offset = node.Placement(start=(len(line)*-xOffset, 0, 0))
+			if offset:
+				for letter in line:
+					if letter:
+						letter.getPlacement().move(offset)
+
 		self._letters = []
+		lineCollect = []
 		i, j, k = (0, 0, 0)
 		for c in self._text:
 			if c == '\n':
-				i = -1
+				i = 0
 				j += 1
 				l = None
-			elif c == ' ':
-				l = None
+				# Realign
+				collect(lineCollect)
+				lineCollect = []
 			else:
-				l = Text('%s_%05d' % (self.name, k), c)
-				l.copyAttributes(self)
-				if curve:
-					offset = curve(i)
-					l.getPlacement().move(offset)
+				if c == ' ':
+					l = None
 				else:
-					# TODO set scale
-					offset = node.Placement(start=(i*0.18, -j*0.28, 0))
-					l.getPlacement().move(offset)
-			self._letters.append(l)
-			i += 1
-			k += 1
+					l = Text('%s_%05d' % (self.name, k), c)
+					l.copyAttributes(self)
+					if curve:
+						offset = curve(i)
+						l.getPlacement().move(offset)
+					else:
+						# TODO set scale
+						offset = node.Placement(start=(i*xOffset, -j*0.28, 0))
+						l.getPlacement().move(offset)
+					k += 1
+				self._letters.append(l)
+				lineCollect.append(l)
+				i += 1
+
+		collect(lineCollect)
 
 		return self._letters
 
@@ -298,13 +327,14 @@ class Text(Object):
 	def createTweenSet(self, prop, makeEndState, makeCurve):
 		tweenSet = TweenSet()
 		for l in self._letters:
-			if l:
-				tween = Tweener()
-				tween.setObject(l, prop, makeEndState(l))
-				tween.setCurve(makeCurve(l))
-				tweenSet.addTween(tween)
-			else:
-				tweenSet.addTween(None)
+			self._tweenLetter(l, tweenSet, prop, makeEndState, makeCurve)
+
+		return tweenSet
+
+	def createTweenSetBackwards(self, prop, makeEndState, makeCurve):
+		tweenSet = TweenSet()
+		for l in self._letters[::-1]:
+			self._tweenLetter(l, tweenSet, prop, makeEndState, makeCurve)
 
 		return tweenSet
 
