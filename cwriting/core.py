@@ -152,6 +152,27 @@ class Tweener(object):
 		self.grain = 0.2
 		self.adaptive = False
 		self.lazyKeying = False
+
+	def getTimeline(self):
+		return self._timeline
+
+	def tween(self, duration):
+		def frange(end, step):
+			start = 0
+			while start < end:
+				yield start
+				start += step
+
+		last = None
+		for t in frange(duration + self.grain, self.grain):
+			last = self._tweenFrame(t, duration, last)
+			self._timeline.advance(self.grain)
+
+
+class CurveTweener(Tweener):
+	_t = 0
+	def __init__(self):
+		super(CurveTweener, self).__init__()
 		self._curve = None
 		self._builtCurve = None
 		self._obj = None
@@ -169,24 +190,13 @@ class Tweener(object):
 		self._curve = curve
 		self._builtCurve = self._startState.genCurve(self._endState, curve)
 
-	def getTimeline(self):
-		return self._timeline
-
-	def tween(self, duration):
-		def frange(end, step):
-			start = 0
-			while start < end:
-				yield start
-				start += step
-
-		last = None
-		for t in frange(duration + self.grain, self.grain):
-			v = self._builtCurve(t/duration)
-			if not self.lazyKeying or last != v:
-				last = v
-				self._obj.set(self._prop, v)
-				self._obj.key(self._prop, self._timeline)
-			self._timeline.advance(self.grain)
+	def _tweenFrame(self, t, duration, opaque):
+		v = self._builtCurve(t/duration)
+		if not self.lazyKeying or opaque != v:
+			opaque = v
+			self._obj.set(self._prop, v)
+			self._obj.key(self._prop, self._timeline)
+		return opaque
 
 class TweenSet(object):
 	_x = 0
@@ -244,6 +254,8 @@ class Object(object):
 		e.addChild(diff)
 		return e
 
+	# TODO privatize specialization calls
+
 	def setPlacement(self, placement):
 		self._props.setProperty('Placement', copy.deepcopy(placement))
 
@@ -265,6 +277,9 @@ class Object(object):
 	def setScale(self, v):
 		self._props.getProperty('Scale').setValue(v)
 
+	def getScale(self):
+		return self._props.getProperty('Scale').getValue()
+
 	def set(self, prop, v):
 		getattr(self, 'set' + prop)(v)
 
@@ -276,8 +291,8 @@ class Object(object):
 
 class Group(Object):
 	def __init__(self, name):
-		self.name = name
-		self._members = []
+		super(Group, self).__init__(name)
+		self._children = []
 
 	def encloseDiff(self, diff):
 		e = node.GroupRef(self)
@@ -285,11 +300,29 @@ class Group(Object):
 		return e
 
 	def addObject(self, obj):
-		self._members.append(obj)
+		self._children.append(obj)
+
+	def applyMap(self, vmap):
+		for m in self._children:
+			p = m.getPlacement()
+			v = vmap(*p.position)
+			m.set(vmap.prop, v)
+
+	def set(self, prop, v):
+		super(Group, self).set(prop, v)
+		for c in self._children:
+			if c:
+				c.set(prop, v)
+
+	def key(self, prop, timeline):
+		super(Group, self).key(prop, timeline)
+		for c in self._children:
+			if c:
+				c.key(prop, timeline)
 
 	def distill(self):
 		g = node.Group(self.name)
-		for m in self._members:
+		for m in self._children:
 			for c in m.distill():
 				if c:
 					g.addObject(c)
@@ -302,11 +335,12 @@ class Text(Object):
 		self.halign = 'center'
 		self.valign = 'center'
 		self.depth = 0
+		# TODO phase this list out
 		self._letters = []
 
 	def _tweenLetter(self, l, tweenSet, prop, makeEndState, makeCurve):
 		if l:
-			tween = Tweener()
+			tween = CurveTweener()
 			tween.setObject(l, prop, makeEndState(l))
 			tween.setCurve(makeCurve(l))
 			tweenSet.addTween(tween)
@@ -314,7 +348,9 @@ class Text(Object):
 			tweenSet.addTween(None)
 
 	def breakApart(self, curve=None):
-		xOffset = 0.18
+		# TODO set scale
+		xOffset = 0.18*self.getScale()
+		yOffset = 0.28*self.getScale()
 		def collect(line):
 			offset = None
 			if self.halign == 'center':
@@ -334,7 +370,7 @@ class Text(Object):
 				i = 0
 				j += 1
 				l = None
-				# Realign
+				# Realign column
 				collect(lineCollect)
 				lineCollect = []
 			else:
@@ -344,11 +380,10 @@ class Text(Object):
 					l = Text('%s_%05d' % (self.name, k), c)
 					l.copyAttributes(self)
 					if curve:
-						offset = curve(i)
+						offset = curve(i, j)
 						l.getPlacement().move(offset)
 					else:
-						# TODO set scale
-						offset = node.Placement(start=(i*xOffset, -j*0.28, 0))
+						offset = node.Placement(start=(i*xOffset, -j*yOffset, 0))
 						l.getPlacement().move(offset)
 					k += 1
 				self._letters.append(l)
@@ -357,12 +392,26 @@ class Text(Object):
 
 		collect(lineCollect)
 
+		# Realing columns
+		offset = None
+		if self.valign == 'center':
+			offset = node.Placement(start=(0, (j+0)*0.5*yOffset, 0))
+		elif self.valign == 'bottom':
+			offset = node.Placement(start=(0, (j+0)*yOffset, 0))
+		if offset:
+			for letter in self._letters:
+				if letter:
+					letter.getPlacement().move(offset)
+
+		# XXX remove when phasing _letters into _children
+		self._children = self._letters
 		return self._letters
 
-	def makeGroup(self):
+	def getGroup(self):
+		# TODO cache
 		g = None
 		if self._letters:
-			g = Group()
+			g = Group('text:' + str(self.name))
 			for l in self._letters:
 				if l:
 					g.addObject(l)

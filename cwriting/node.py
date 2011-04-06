@@ -323,7 +323,7 @@ class ObjectChange(Node):
 
 class GroupRef(Node):
 	def __init__(self, obj):
-		super(ObjectChange, self).__init__('GroupRef')
+		super(GroupRef, self).__init__('GroupRef')
 		self.setAttr('name', obj.name)
 
 class Transition(Node):
@@ -428,4 +428,7 @@ class AxisRotation(Node):
 		return self.axis == rhs.axis and self.angle == rhs.angle
 
 	def rotate(self, other):
+		pass
+
+	def project(self, (x, y, z)):
 		pass

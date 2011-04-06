@@ -1,3 +1,5 @@
+import cwriting.node as node
+
 import math
 
 const1 = (lambda x: (lambda t: x))
@@ -41,5 +43,36 @@ linear3 = (lambda t: (t, t, t))
 quadIn3 = (lambda t: (t*t, t*t, t*t))
 quadOut3 = (lambda t: ((2 - t)*t, (2 - t)*t, (2 - t)*t))
 
-class DepthMap2D(object):
+class Map(object):
 	pass
+
+class PlanarMap(Map):
+	def __init__(self, prop, rot, d):
+		self._rotation = rot
+		self._displacement = d
+		self.prop = 'Placement'
+
+	def __call__(self, x, y, z):
+		# TODO project x, y, z onto s, t
+		s, t = x, z
+		return self.value(s, t)
+
+class HeightMap(PlanarMap):
+	def __init__(self, rot, d, z, n=None):
+		super(HeightMap, self).__init__('Placement', rot, d)
+		self._z = z
+		self._n = n
+
+	def value(self, s, t):
+		p = node.Placement(start=(s, self.height(s, t), t))
+		# TODO rotation
+		return p
+
+	def height(self, s, t):
+		return self._z(s, t) - self._displacement
+
+	def normal(self, s, t):
+		if self._n:
+			return self._n(s, t)
+		else:
+			return node.AxisRotation()
