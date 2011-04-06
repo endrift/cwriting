@@ -20,6 +20,9 @@ class Document(object):
 	def registerObject(self, obj):
 		self._objs.append(copy.deepcopy(obj))
 
+	def registerGroup(self, obj):
+		self._groups.append(obj)
+
 	def registerTimeline(self, obj):
 		self._times.append(obj)
 
@@ -74,7 +77,7 @@ class Timeline(object):
 				diff = current[key]['value'].genDiff(current[key], next)
 				if diff:
 					ta = node.TimedActions(current[key]['time'])
-					ta.addAction(diff)
+					ta.addAction(next['object'].encloseDiff(diff))
 					self._changes.append(ta)
 
 			current[key] = next
@@ -144,10 +147,11 @@ class Timeline(object):
 class Tweener(object):
 	_t = 0
 	def __init__(self):
-		self._timeline = Timeline('tween:%d' % Tweener._t)
+		self._timeline = Timeline('tween:%05d' % Tweener._t)
 		Tweener._t += 1
 		self.grain = 0.2
 		self.adaptive = False
+		self.lazyKeying = False
 		self._curve = None
 		self._builtCurve = None
 		self._obj = None
@@ -175,10 +179,13 @@ class Tweener(object):
 				yield start
 				start += step
 
+		last = None
 		for t in frange(duration + self.grain, self.grain):
 			v = self._builtCurve(t/duration)
-			self._obj.set(self._prop, v)
-			self._obj.key(self._prop, self._timeline)
+			if not self.lazyKeying or last != v:
+				last = v
+				self._obj.set(self._prop, v)
+				self._obj.key(self._prop, self._timeline)
 			self._timeline.advance(self.grain)
 
 class TweenSet(object):
@@ -199,8 +206,13 @@ class TweenSet(object):
 			if tween:
 				tween.grain = grain
 
+	def setLazyKeying(self, lazyKeying):
+		for tween in self._tweens:
+			if tween:
+				tween.lazyKeying = lazyKeying
+
 	def tweenAcross(self, diff, duration):
-		master = Timeline('tweenset:%i' % TweenSet._x)
+		master = Timeline('tweenset:%03d' % TweenSet._x)
 		TweenSet._x += 1
 		for tween in self._tweens:
 			if tween:
@@ -226,6 +238,11 @@ class Object(object):
 	def copyAttributes(self, other):
 		self._props.clear()
 		self._props.copy(other._props)
+
+	def encloseDiff(self, diff):
+		e = node.ObjectChange(self)
+		e.addChild(diff)
+		return e
 
 	def setPlacement(self, placement):
 		self._props.setProperty('Placement', copy.deepcopy(placement))
@@ -256,6 +273,27 @@ class Object(object):
 
 	def key(self, prop, timeline):
 		getattr(self, 'key' + prop)(timeline)
+
+class Group(Object):
+	def __init__(self, name):
+		self.name = name
+		self._members = []
+
+	def encloseDiff(self, diff):
+		e = node.GroupRef(self)
+		e.addChild(diff)
+		return e
+
+	def addObject(self, obj):
+		self._members.append(obj)
+
+	def distill(self):
+		g = node.Group(self.name)
+		for m in self._members:
+			for c in m.distill():
+				if c:
+					g.addObject(c)
+		return g
 
 class Text(Object):
 	def __init__(self, name, text):
@@ -320,6 +358,15 @@ class Text(Object):
 		collect(lineCollect)
 
 		return self._letters
+
+	def makeGroup(self):
+		g = None
+		if self._letters:
+			g = Group()
+			for l in self._letters:
+				if l:
+					g.addObject(l)
+		return g
 
 	def getText(self):
 		return self._text

@@ -170,7 +170,7 @@ class Placement(Property):
 	def _genDiff(self, current, delta, next):
 		if current['value'] == next['value']:
 			return None
-		return Movement(next['object'], next['time'] - current['time'], next['value'])
+		return Movement(next['time'] - current['time'], next['value'])
 
 	def move(self, rhs):
 		self.position = [l + r for (l, r) in zip(self.position, rhs.position)]
@@ -317,29 +317,32 @@ class Text(Object):
 # Actions
 
 class ObjectChange(Node):
-	def __init__(self, obj, duration):
+	def __init__(self, obj):
 		super(ObjectChange, self).__init__('ObjectChange')
 		self.setAttr('name', obj.name)
-		self._transition = Node('Transition')
-		self._transition.setAttr('duration', duration)
-		self.addChild(self._transition)
 
-	def setTransition(self, trans):
-		self._transition.addChild(trans)
+class GroupRef(Node):
+	def __init__(self, obj):
+		super(ObjectChange, self).__init__('GroupRef')
+		self.setAttr('name', obj.name)
 
-class MoveRel(ObjectChange):
-	def __init__(self, obj, duration, delta):
-		super(MoveRel, self).__init__(obj, duration)
+class Transition(Node):
+	def __init__(self, duration):
+		super(Transition, self).__init__('Transition')
+		self.setAttr('duration', duration)
+		
+class MoveRel(Transition):
+	def __init__(self, duration, delta):
+		super(MoveRel, self).__init__(duration)
 		move = Node('MoveRel')
 		move.addChild(delta)
-		self.setTransition(move)
 
-class Movement(ObjectChange):
-	def __init__(self, obj, duration, newloc):
-		super(Movement, self).__init__(obj, duration)
+class Movement(Transition):
+	def __init__(self, duration, newloc):
+		super(Movement, self).__init__(duration)
 		move = Node('Movement')
 		move.addChild(newloc)
-		self.setTransition(move)
+		self.addChild(move)
 
 class TimerChange(Node):
 	def __init__(self, timer, kind='start'):
@@ -364,8 +367,8 @@ class Value(Property):
 		if current['value'] == next['value']:
 			return None
 
-		d = ObjectChange(current['object'], delta)
-		d.setTransition(copy.deepcopy(next['value']))
+		d = Transition(delta)
+		d.addChild(copy.deepcopy(next['value']))
 		return d
 
 	def getValue(self):
