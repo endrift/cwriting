@@ -79,6 +79,7 @@ class Story(Node):
 			'groups': Node('GroupRoot'),
 			'timelines': Node('TimelineRoot'),
 			'placements': Node('PlacementRoot'),
+			'particleactions': Node('ParticleActionRoot')
 		}
 		self.setAttr('version', version)
 		self.setAttr('last_xpath', last_xpath)
@@ -103,6 +104,9 @@ class Story(Node):
 
 	def addTimeline(self, timeline):
 		self._add('timelines', timeline)
+
+	def addParticleActions(self, pa):
+		self._add('particleactions', pa)
 
 class Object(Node):
 	def __init__(self, name, obj):
@@ -149,12 +153,19 @@ class PropertySet(object):
 	def setScalar(self, name, v):
 		self._props[name] = Scalar(name, v)
 
+	def setCoord(self, name, (x, y, z)):
+		self._props[name] = Coord(name, (x, y, z))
+
 	def genNodes(self, doc):
 		props = []
 		for p in self._props.itervalues():
 			props.append(p.genNode(doc))
 
 		return props
+
+	def genAttrs(self, parent):
+		for p in self._props.itervalues():
+			parent.setAttrFromNode(p)
 
 class Placement(Property):
 	def __init__(self, name=None, start=(0, 0, 0)):
@@ -209,6 +220,8 @@ class Placement(Property):
 class Group(Node):
 	def __init__(self, name):
 		super(Group, self).__init__('Group')
+		self.name = name
+		self.setAttr('name', name)
 
 	def addObject(self, obj):
 		self.clearChildren()
@@ -313,6 +326,23 @@ class Text(Object):
 		self._content.addChild(tnode)
 
 		return super(Text, self).genNode(doc)
+
+class ParticleSystem(Object):
+	def __init__(self, name, ps):
+		super(ParticleSystem, self).__init__(name, ps)
+
+	def genNode(self, doc):
+		self.clearChildren()
+		pnode = Node('ParticleSystem')
+		pnode.setAttr('max-particles', self._obj.maxParticles)
+		pnode.setAttr('actions-name', self._obj.actions.name)
+		pnode.setAttr('particle-group', self._obj.particles.name)
+		pnode.setAttrFromNode(Boolean('look-at-camera', self._obj.lookAtCamera))
+		pnode.setAttrFromNode(Boolean('sequential', self._obj.sequential))
+		pnode.setAttr('speed', self._obj.speed)
+		self._content.addChild(pnode)
+
+		return super(ParticleSystem, self).genNode(doc)
 
 # Actions
 
@@ -432,3 +462,146 @@ class AxisRotation(Node):
 
 	def project(self, (x, y, z)):
 		pass
+
+# Particle-related classes
+
+class ParticleActionList(Node):
+	def __init__(self, name):
+		super(ParticleActionList, self).__init__('ParticleActionList')
+		self.name = name
+		self.setAttr('name', name)
+		self._source = Node('Source')
+		self._sourceDomain = None
+		self._rate = Scalar('rate', 1)
+		self._vel = Node('Vel')
+		self._velDomain = None
+		self._actions = []
+		self._remove = None
+
+	def setSource(self, source):
+		self._sourceDomain = source
+		self._source.clearChildren()
+		self._source.addChild(self._sourceDomain)
+
+	def setVel(self, vel):
+		self._velDomain = vel
+		self._vel.clearChildren()
+		self._vel.addChild(self._velDomain)
+
+	def setRate(self, rate):
+		self._rate.setValue(rate)
+
+	def setRemoveCondition(self, remove):
+		self._remove = remove
+
+	def addAction(self, action):
+		self._actions.append(action)
+
+	def genNode(self, doc):
+		self.clearChildren()
+		self.setAttr('name', self.name)
+		self.addChild(self._source)
+		self._source.setAttrFromNode(self._rate)
+		self.addChild(self._vel)
+		for pa in self._actions:
+			self.addChild(pa)
+		self.addChild(self._remove)
+
+		return super(ParticleActionList, self).genNode(doc)
+
+# ParticleDomains
+
+# TODO: cleanup these sorts of classes
+
+class ParticleDomain(Node):
+	def __init__(self):
+		super(ParticleDomain, self).__init__('ParticleDomain')
+		self._domProps = PropertySet()
+		self._dom = None
+
+	def genNode(self, doc):
+		self.clearChildren()
+		self.addChild(self._dom)
+		self._domProps.genAttrs(self._dom)
+
+		return super(ParticleDomain, self).genNode(doc)
+
+class Disc(ParticleDomain):
+	def __init__(self):
+		super(Disc, self).__init__()
+		self._dom = Node('Disc')
+		self._domProps.setCoord('center', (0, 0, 0))
+		self._domProps.setCoord('normal', (0, -1, 0))
+		self._domProps.setScalar('radius', 4.0)
+		self._domProps.setScalar('radius-inner', 0.0)
+
+	def setCenter(self, (x, y, z)):
+		self._domProps.getProperty('center').setValue((x, y, z))
+
+	def setNormal(self, (x, y, z)):
+		self._domProps.getProperty('normal').setValue((x, y, z))
+
+	def setRadius(self, r):
+		self._domProps.getProperty('radius').setValue(r)
+
+	def setRadiusInner(self, r):
+		self._domProps.getProperty('radius-inner').setValue(r)
+
+class Box(ParticleDomain):
+	def __init__(self):
+		super(Box, self).__init__()
+		self._dom = Node('Box')
+		self._domProps.setCoord('p1', (0, 0, 0))
+		self._domProps.setCoord('p2', (0, 0, 0))
+
+	def setP1(self, (x, y, z)):
+		self._domProps.getProperty('p1').setValue((x, y, z))
+
+	def setP2(self, (x, y, z)):
+		self._domProps.getProperty('p2').setValue((x, y, z))
+
+# ParticleActions
+
+class ParticleAction(Node):
+	def __init__(self):
+		super(ParticleAction, self).__init__('ParticleAction')
+		self._paProps = PropertySet()
+		self._pa = None
+
+	def genNode(self, doc):
+		self.clearChildren()
+		self.addChild(self._pa)
+		self._paProps.genAttrs(self._pa)
+
+		return super(ParticleAction, self).genNode(doc)
+
+class Gravity(ParticleAction):
+	def __init__(self):
+		super(Gravity, self).__init__()
+		self._pa = Node('Gravity')
+		self._paProps.setCoord('direction', (0, 1, 0))
+
+	def setDirection(self, (x, y, z)):
+		self._paProps.getProperty('direction').setValue((x, y, z))
+
+# RemoveConditions
+
+class RemoveCondition(Node):
+	def __init__(self):
+		super(RemoveCondition, self).__init__('RemoveCondition')
+		self._rcProps = PropertySet()
+		self._rc = None
+
+	def genNode(self, doc):
+		self.clearChildren()
+		self.addChild(self._rc)
+		self._rcProps.genAttrs(self._rc)
+
+		return super(RemoveCondition, self).genNode(doc)
+
+class Age(RemoveCondition):
+	def __init__(self, age, youngerThan=False):
+		super(Age, self).__init__()
+		self._rc = Node('Age')
+		self._rcProps.setScalar('age', age)
+		self._rcProps.setBool('younger-than', youngerThan)

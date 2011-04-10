@@ -8,6 +8,7 @@ class Document(object):
 		self._objs = []
 		self._groups = []
 		self._times = []
+		self._pa = []
 		self._firstScene = None
 
 	def addScene(self, (name, rootTimeline), isFirst=False):
@@ -17,6 +18,9 @@ class Document(object):
 		if isFirst:
 			self._firstScene = rootTimeline
 
+	def setFirstScene(self, scene):
+		self._firstScene = scene
+
 	def registerObject(self, obj):
 		self._objs.append(copy.deepcopy(obj))
 
@@ -25,6 +29,9 @@ class Document(object):
 
 	def registerTimeline(self, obj):
 		self._times.append(obj)
+
+	def registerParticleActions(self, obj):
+		self._pa.append(obj)
 
 	def distill(self):
 		doc = node.Document()
@@ -38,6 +45,9 @@ class Document(object):
 
 		for timeline in self._times:
 			story.addTimeline(timeline.distill())
+
+		for pa in self._pa:
+			story.addParticleActions(pa)
 
 		if self._firstScene:
 			first = Timeline('scene:_autostart', True)
@@ -444,3 +454,16 @@ class Text(Object):
 			nodes = [node.Text(self.name, self)]
 
 		return nodes
+
+class ParticleSystem(Object):
+	def __init__(self, name):
+		super(ParticleSystem, self).__init__(name)
+		self.maxParticles = 100
+		self.actions = None
+		self.particles = None
+		self.lookAtCamera = False
+		self.sequential = True
+		self.speed = 1.0
+
+	def distill(self):
+		return [node.ParticleSystem(self.name, self)]
