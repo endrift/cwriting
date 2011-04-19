@@ -168,11 +168,11 @@ class PropertySet(object):
 			parent.setAttrFromNode(p)
 
 class Placement(Property):
-	def __init__(self, name=None, start=(0, 0, 0)):
+	def __init__(self, name=None, start=(0, 0, 0), rotation=None):
 		super(Placement, self).__init__('Placement')
 		self.position = list(start)
 		self.relativeTo = 'Center'
-		self.rotation = AxisRotation()
+		self.rotation = rotation or AxisRotation()
 		self.name = name
 
 	def __eq__(self, rhs):
@@ -215,6 +215,7 @@ class Placement(Property):
 		self.addChild(n)
 		n = Coord('Position', self.position)
 		self.addChild(n)
+		self.addChild(self.rotation)
 		return super(Placement, self).genNode(doc)
 
 class Group(Node):
