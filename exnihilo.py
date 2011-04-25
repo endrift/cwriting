@@ -22,6 +22,24 @@ def makeRiseTween(d, obj, duration, real, diff=node.Placement(start=(0, -0.2, 0)
 	obj.keyVisibility(tl)
 	return tl
 
+def makeFallTween(d, obj, duration, real, diff=node.Placement(start=(0, -0.2, 0))):
+	tl = core.Timeline(d.next())
+	d.registerTimeline(tl)
+	obj.setPlacement(real)
+	obj.setVisibility(True)
+	obj.keyPlacement(tl)
+	obj.keyVisibility(tl)
+	objTweenIn = core.CurveTweener()
+	objTweenIn.setObject(obj, 'Placement', real.moved(diff))
+	objTweenIn.setCurve(curve.quadIn3) 
+	objTweenIn.tween(duration)
+	d.registerTimeline(objTweenIn.getTimeline())
+	tl.changeTimeline(objTweenIn.getTimeline())
+	tl.advance(duration)
+	obj.setVisibility(False)
+	obj.keyVisibility(tl)
+	return tl
+
 def genScene0(d):
 	tl0 = core.Timeline(d.next())
 	d.registerTimeline(tl0)
@@ -293,9 +311,9 @@ def genSceneRain(d):
 	theRainsPSystem.key('Visibility', tl0)
 
 	tl0.advance(5)
-
-	sceneText.keyVisibility(tl0)
-	sceneText2.keyVisibility(tl0)
+	tl0.changeTimeline(makeFallTween(d, sceneText, 1, node.Placement(start=(0, 2.2, -2))))
+	tl0.changeTimeline(makeFallTween(d, sceneText2, 1, node.Placement(start=(0, 0.7, -2))))
+	tl0.advance(1)
 	tl0.startScene('lands')
 
 	return 'rain', tl0
@@ -304,28 +322,82 @@ def genSceneLands(d):
 	tl0 = core.Timeline(d.next())
 	d.registerTimeline(tl0)
 
-	sceneText = core.Text(d.next(), 'But the oceans were unending.\n'
-	                                'From beneath the infinite oceans\n'
-	                                'rose the lands. Solid stone jutted\n'
-	                                'out. The mountains towered, and\n'
-	                                'slowly the land emerged from the\n'
-	                                'ocean. There was a terminus\n'
-	                                'setting apart the seas.')
+	sceneText = core.Text(d.next(), 'But the oceans were unending.')
+	sceneText2 = core.Text(d.next(), 'From beneath the infinite oceans\n'
+	                                 'rose the lands. Solid stone jutted\n'
+	                                 'out. The mountains towered, and\n'
+	                                 'slowly the land emerged from the\n'
+	                                 'ocean. There was a terminus\n'
+	                                 'setting apart the seas.')
 
-	sceneText.setPlacement(node.Placement(start=(0, 2.0, -2)))
+	sceneText.setPlacement(node.Placement(start=(0, 2.4, -2)))
+	sceneText2.setPlacement(node.Placement(start=(0, 1.1, -2)))
 	d.registerObject(sceneText)
-	sceneText.keyPlacement(tl0)
-	sceneText.keyVisibility(tl0)
+	d.registerObject(sceneText2)
 
-	tl0.changeTimeline(makeRiseTween(d, sceneText, 1, node.Placement(start=(0, 2.2, -2))))
+	waterText = core.Text(d.next(), 'Into the horizon, into the eternity, the\n'
+	                                'waters spread forever. North, south, east,\n'
+	                                'and west: in all directions, the waters\n'
+	                                'were all that could be seen, for the waters\n'
+	                                'were all there was. Above the waters, the\n'
+	                                'skies looked down upon her brother and saw\n'
+	                                'the loneliness of his expanse. She knew\n'
+	                                'something was missing, and she knew that\n'
+	                                'there was more to come. There must be no\n'
+	                                'infinite; there must be bounds, they must\n'
+	                                'just be found. After the rains, the waters\n'
+	                                'were calm. But this too must not last, for\n'
+	                                'the bleak emptiness of the unending filled\n'
+	                                'the waters. This pure boredom of the waters,\n'
+	                                'with no waves and no motion, must be ended\n'
+	                                'somehow. The end has yet to be seen, but\n'
+	                                'there must be an end. There must be an end.\n'
+	                                'Where is the end? The end must be found. The\n'
+	                                'skies and the seas must make this end. There\n'
+	                                'will be a terminus. There must be an end.')
+	waterText.setScale(2)
+	waterText.valign = 'bottom'
+	waterText.setPlacement(node.Placement(start=(0, -3, 0), rotation=node.AxisRotation(axis=(1, 0, 0), rotation=-90)))
+	d.registerObject(waterText)
+	waterText.keyVisibility(tl0)
+
+	tl0.changeTimeline(makeRiseTween(d, sceneText, 1, node.Placement(start=(0, 2.6, -2))))
+	tl0.advance(1)
+
+	waterText.setVisibility(True)
+	waterText.keyVisibility(tl0)
+	tl0.advance(2)
+
+	mountain01 = core.Text(d.next(), 'Mountains rose')
+	mountain01.setPlacement(node.Placement(start=(-3, -2, 0), rotation=node.LookAt(target=(0, 1, 0.5), up=(0, 0, 1))))
+	d.registerObject(mountain01)
+	mountain01.keyVisibility(tl0)
+	mountain01.keyPlacement(tl0)
+
+	tl0.changeTimeline(makeRiseTween(d, sceneText2, 1, node.Placement(start=(0, 1.3, -2))))
+	tl0.advance(0.3)
+
+	mountain01.getPlacement().move(node.Placement(start=(0, 1, 0), rotation=node.LookAt()))
+	mountain01.keyPlacement(tl0)
+
+	tl0.advance(0.1)
+	mountain01.getPlacement().move(node.Placement(start=(0, 0.1, 0), rotation=node.LookAt()))
+	mountain01.keyPlacement(tl0)
+
+	tl0.advance(0.1)
+	mountain01.getPlacement().move(node.Placement(start=(0, 0.3, 0), rotation=node.LookAt()))
+	mountain01.keyPlacement(tl0)
+	
+	mountain01.setVisibility(True)
+	mountain01.keyVisibility(tl0)
 
 	return 'lands', tl0
 
 d = core.Document()
 
-d.addScene(genScene0(d))
-d.addScene(genSceneInTheBeginning(d))
-d.addScene(genSceneRain(d), True)
-d.addScene(genSceneLands(d))
+#d.addScene(genScene0(d), True)
+#d.addScene(genSceneInTheBeginning(d))
+#d.addScene(genSceneRain(d))
+d.addScene(genSceneLands(d), True)
 
 d.save('exnihilo.xml')
