@@ -185,7 +185,7 @@ class Placement(Property):
 
 	def move(self, rhs):
 		self.position = [l + r for (l, r) in zip(self.position, rhs.position)]
-		self.rotation.rotate(rhs.rotation)
+		self.rotation.rotate(rhs)
 
 	def moved(self, rhs):
 		lhs = copy.deepcopy(self)
@@ -460,6 +460,29 @@ class AxisRotation(Node):
 
 	def rotate(self, other):
 		pass
+
+	def project(self, (x, y, z)):
+		pass
+
+class LookAt(Node):
+	def __init__(self, target=(0, 0, 0), up=(0, 0, 0)):
+		super(LookAt, self).__init__('LookAt')
+		self.target = Coord('target', target)
+		self._target = list(target)
+		self.up = Coord('up', up)
+		self._up = list(up)
+		self.setAttrFromNode(self.target)
+		self.setAttrFromNode(self.up)
+
+	def __eq__(self, rhs):
+		return self.target == rhs.target and self.up == rhs.up
+
+	def rotate(self, other):
+		# This really doesn't make any sense, but LookAt is absolute anyway
+		self._target = [l + m + r for (l, m, r) in zip(self._target, other.rotation._target, other.position)]
+		self.target.setValue(tuple(self._target))
+		self._up = other.rotation._up
+		self.up = copy.deepcopy(other.rotation.up)
 
 	def project(self, (x, y, z)):
 		pass
