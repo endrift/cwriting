@@ -368,28 +368,44 @@ def genSceneLands(d):
 	waterText.keyVisibility(tl0)
 	tl0.advance(2)
 
-	mountain01 = core.Text(d.next(), 'Mountains rose')
-	mountain01.setPlacement(node.Placement(start=(-3, -2, 0), rotation=node.LookAt(target=(0, 1, 0.5), up=(0, 0, 1))))
+	mountain01 = core.Text(d.next(), 'The mountains rose from beneath the seas, filling the space around them. And here did the oceans part.'.replace(' ', '\n'))
+	mountain01.halign = 'right'
+	mountain01.setScale(2)
+	mountain01.setPlacement(node.Placement(start=(-5, -4, -5), rotation=node.LookAt(target=(-2, -2.8, -4.5), up=(0, 0, -1))))
 	d.registerObject(mountain01)
 	mountain01.keyVisibility(tl0)
 	mountain01.keyPlacement(tl0)
 
+
+	mountain02 = core.Text(d.next(), 'No longer whole, the seas were sundered by cliffs and beaches. And beyond these shores lay more still.'.replace(' ', '\n'))
+	mountain02.halign = 'left'
+	mountain02.setScale(2)
+	mountain02.setPlacement(node.Placement(start=(5, -4, -5), rotation=node.LookAt(target=(2, -2.8, -4.5), up=(0, 0, -1))))
+	d.registerObject(mountain02)
+	mountain02.keyVisibility(tl0)
+	mountain02.keyPlacement(tl0)
+
+	mountain01TweenIn = core.CurveTweener()
+	mountain01TweenIn.setObject(mountain01, 'Placement', mountain01.getPlacement().moved(node.Placement(start=(-0.2, 1, 0), rotation=node.LookAt(up=(0, 0, -1)))))
+	mountain01TweenIn.setCurve(curve.quadOut3)
+	mountain01TweenIn.tween(1)
+	d.registerTimeline(mountain01TweenIn.getTimeline())
+	tl0.changeTimeline(mountain01TweenIn.getTimeline())
+
+	mountain02TweenIn = core.CurveTweener()
+	mountain02TweenIn.setObject(mountain02, 'Placement', mountain02.getPlacement().moved(node.Placement(start=(0.2, 1, 0), rotation=node.LookAt(up=(0, 0, -1)))))
+	mountain02TweenIn.setCurve(curve.quadOut3)
+	mountain02TweenIn.tween(1)
+	d.registerTimeline(mountain02TweenIn.getTimeline())
+	tl0.changeTimeline(mountain02TweenIn.getTimeline())
+
 	tl0.changeTimeline(makeRiseTween(d, sceneText2, 1, node.Placement(start=(0, 1.3, -2))))
-	tl0.advance(0.3)
+	tl0.advance(1)
 
-	mountain01.getPlacement().move(node.Placement(start=(0, 1, 0), rotation=node.LookAt()))
-	mountain01.keyPlacement(tl0)
-
-	tl0.advance(0.1)
-	mountain01.getPlacement().move(node.Placement(start=(0, 0.1, 0), rotation=node.LookAt()))
-	mountain01.keyPlacement(tl0)
-
-	tl0.advance(0.1)
-	mountain01.getPlacement().move(node.Placement(start=(0, 0.3, 0), rotation=node.LookAt()))
-	mountain01.keyPlacement(tl0)
-	
 	mountain01.setVisibility(True)
 	mountain01.keyVisibility(tl0)
+	mountain02.setVisibility(True)
+	mountain02.keyVisibility(tl0)
 
 	return 'lands', tl0
 
