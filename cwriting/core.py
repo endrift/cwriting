@@ -170,7 +170,7 @@ class Tweener(object):
 	def tween(self, duration):
 		def frange(end, step):
 			start = 0
-			while 0.0001 < math.fabs(end - start):
+			while 0.0001 < end - start:
 				yield start
 				start += step
 
