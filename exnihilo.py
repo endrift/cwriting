@@ -388,18 +388,17 @@ def genSceneLands(d):
 	mountain01TweenIn = core.CurveTweener()
 	mountain01TweenIn.setObject(mountain01, 'Placement', mountain01.getPlacement().moved(node.Placement(start=(-0.2, 1, 0), rotation=node.LookAt(up=(0, 0, -1)))))
 	mountain01TweenIn.setCurve(curve.quadOut3)
-	mountain01TweenIn.tween(1)
+	mountain01TweenIn.tween(2)
 	d.registerTimeline(mountain01TweenIn.getTimeline())
 	tl0.changeTimeline(mountain01TweenIn.getTimeline())
 
 	mountain02TweenIn = core.CurveTweener()
 	mountain02TweenIn.setObject(mountain02, 'Placement', mountain02.getPlacement().moved(node.Placement(start=(0.2, 1, 0), rotation=node.LookAt(up=(0, 0, -1)))))
 	mountain02TweenIn.setCurve(curve.quadOut3)
-	mountain02TweenIn.tween(1)
+	mountain02TweenIn.tween(2)
 	d.registerTimeline(mountain02TweenIn.getTimeline())
 	tl0.changeTimeline(mountain02TweenIn.getTimeline())
 
-	tl0.changeTimeline(makeRiseTween(d, sceneText2, 1, node.Placement(start=(0, 1.3, -2))))
 	tl0.advance(1)
 
 	mountain01.setVisibility(True)
@@ -407,13 +406,16 @@ def genSceneLands(d):
 	mountain02.setVisibility(True)
 	mountain02.keyVisibility(tl0)
 
+	tl0.changeTimeline(makeRiseTween(d, sceneText2, 1, node.Placement(start=(0, 1.3, -2))))
+	tl0.advance(2)
+
 	return 'lands', tl0
 
 d = core.Document()
 
-#d.addScene(genScene0(d), True)
-#d.addScene(genSceneInTheBeginning(d))
-#d.addScene(genSceneRain(d))
-d.addScene(genSceneLands(d), True)
+d.addScene(genScene0(d), True)
+d.addScene(genSceneInTheBeginning(d))
+d.addScene(genSceneRain(d))
+d.addScene(genSceneLands(d))
 
 d.save('exnihilo.xml')
