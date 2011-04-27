@@ -1,6 +1,7 @@
 import node
 import copy
 import curve
+import math
 
 class Document(object):
 	def __init__(self):
@@ -169,7 +170,7 @@ class Tweener(object):
 	def tween(self, duration):
 		def frange(end, step):
 			start = 0
-			while start < end:
+			while 0.0001 < math.fabs(end - start):
 				yield start
 				start += step
 
