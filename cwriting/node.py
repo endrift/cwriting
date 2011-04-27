@@ -185,7 +185,8 @@ class Placement(Property):
 
 	def move(self, rhs):
 		self.position = [l + r for (l, r) in zip(self.position, rhs.position)]
-		self.rotation.rotate(rhs)
+		if rhs.rotation != AxisRotation():
+			self.rotation.rotate(rhs)
 
 	def moved(self, rhs):
 		lhs = copy.deepcopy(self)
@@ -194,13 +195,13 @@ class Placement(Property):
 
 	def genCurve(self, end, curve):
 		diffPos = [r - l for (l, r) in zip(self.position, end.position)]
-		# TODO diff rotation
-		diffRot = None
+		rcurve = self.rotation.genCurve(end.rotation, curve)
 		def move(t):
 			tAfter = curve(t)
 			pos = [(1 - c)*s + c*e for (s, e, c) in zip([0, 0, 0], diffPos, tAfter)]
 			placement = copy.deepcopy(self)
 			placement.move(Placement(start=pos))
+			placement.rotation = rcurve(t)
 			return placement
 
 		return move
@@ -456,13 +457,20 @@ class AxisRotation(Node):
 		self.setAttrFromNode(self.angle)
 
 	def __eq__(self, rhs):
-		return self.axis == rhs.axis and self.angle == rhs.angle
+		return isinstance(rhs, AxisRotation) and self.axis == rhs.axis and self.angle == rhs.angle
+
+	def __ne__(self, rhs):
+		return not self == rhs
 
 	def rotate(self, other):
 		pass
 
 	def project(self, (x, y, z)):
 		pass
+
+	def genCurve(self, end, curve):
+		# FIXME: actually tween
+		return (lambda t: copy.deepcopy(self))
 
 class LookAt(Node):
 	def __init__(self, target=(0, 0, 0), up=(0, 0, 0)):
@@ -475,7 +483,10 @@ class LookAt(Node):
 		self.setAttrFromNode(self.up)
 
 	def __eq__(self, rhs):
-		return self.target == rhs.target and self.up == rhs.up
+		return isinstance(rhs, LookAt) and self.target == rhs.target and self.up == rhs.up
+
+	def __ne__(self, rhs):
+		return not self == rhs
 
 	def rotate(self, other):
 		# This really doesn't make any sense, but LookAt is absolute anyway
@@ -486,6 +497,15 @@ class LookAt(Node):
 
 	def project(self, (x, y, z)):
 		pass
+
+	def genCurve(self, end, curve):
+		def move(t):
+			tAfter = curve(t)
+			target = [(1 - c)*s + c*e for (s, e, c) in zip(self._target, end._target, tAfter)]
+			up = [(1 - c)*s + c*e for (s, e, c) in zip(self._up, end._up, tAfter)]
+			return LookAt(target=target, up=up)
+
+		return move
 
 # Particle-related classes
 
