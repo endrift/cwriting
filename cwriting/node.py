@@ -611,6 +611,15 @@ class ParticleDomain(Node):
 
 		return super(ParticleDomain, self).genNode(doc)
 
+class Point(ParticleDomain):
+	def __init__(self):
+		super(Point, self).__init__()
+		self._dom = Node('Point')
+		self._domProps.setCoord('point', (0, 0, 0))
+
+	def setPoint(self, (x, y, z)):
+		self._domProps.getProperty('point').setValue((x, y, z))
+
 class Disc(ParticleDomain):
 	def __init__(self):
 		super(Disc, self).__init__()

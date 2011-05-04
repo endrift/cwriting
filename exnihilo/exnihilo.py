@@ -261,9 +261,8 @@ def genSceneRain(d):
 	theRainsPSource = node.Disc()
 	theRainsPSource.setCenter((0, 8, 0))
 	theRainsPSource.setNormal((0.2, -1.0, 0))
-	theRainsPVel = node.Box()
-	theRainsPVel.setP1((-1, -4, 0))
-	theRainsPVel.setP2((2, -2, -2))
+	theRainsPVel = node.Point()
+	theRainsPVel.setPoint((-1, -3, -2))
 	theRainsPActions.setSource(theRainsPSource)
 	theRainsPActions.setVel(theRainsPVel)
 	theRainsPActions.setRemoveCondition(node.Age(6))
@@ -429,15 +428,99 @@ def genSceneLands(d):
 
 	tl0.playSound(sceneSound2)
 	tl0.changeTimeline(makeRiseTween(d, sceneText2, 1, node.Placement(start=(0, 1.3, -2))))
-	tl0.advance(2)
+	tl0.advance(5)
+
+	tl0.changeTimeline(makeFallTween(d, sceneText, 1, node.Placement(start=(0, 2.6, -2))))
+	tl0.changeTimeline(makeFallTween(d, sceneText2, 1, node.Placement(start=(0, 1.3, -2))))
+	tl0.changeTimeline(makeFallTween(d, waterText, 1, node.Placement(start=(0, -3, 0), rotation=node.AxisRotation(axis=(1, 0, 0), rotation=-90)), diff=node.Placement(start=(0, 0, 2))))
+
+	mountain01.keyVisibility(tl0)
+	mountain01TweenOut = core.CurveTweener()
+	mountain01TweenOut.setObject(mountain01, 'Placement', mountain01.getPlacement().moved(node.Placement(start=(-0.5, 1, 0), rotation=node.LookAt(target=(-0.2, 0, 0), up=(0, 0, -1)))))
+	mountain01TweenOut.setCurve(curve.quadIn3)
+	mountain01TweenOut.tween(1)
+	d.registerTimeline(mountain01TweenOut.getTimeline())
+	tl0.changeTimeline(mountain01TweenOut.getTimeline())
+
+	mountain02.keyVisibility(tl0)
+	mountain02TweenOut = core.CurveTweener()
+	mountain02TweenOut.setObject(mountain02, 'Placement', mountain02.getPlacement().moved(node.Placement(start=(0.5, 1, 0), rotation=node.LookAt(target=(0.2, 0, 0), up=(0, 0, -1)))))
+	mountain02TweenOut.setCurve(curve.quadIn3)
+	mountain02TweenOut.tween(1)
+	d.registerTimeline(mountain02TweenOut.getTimeline())
+	tl0.changeTimeline(mountain02TweenOut.getTimeline())
+
+	tl0.advance(1)
+	
+	mountain01.setVisibility(False)
+	mountain01.keyVisibility(tl0)
+	mountain02.setVisibility(False)
+	mountain02.keyVisibility(tl0)
+
+	tl0.startScene('stillyoung')
 
 	return 'lands', tl0
 
+def genSceneStillYoung(d):
+	tl0 = core.Timeline(d.next())
+	d.registerTimeline(tl0)
+	sceneText = core.Text(d.next(), 'The world was still young,\n'
+	                                'and restless. For eons, the\n'
+	                                'skies battled against its\n'
+	                                'younger siblings. The skies\n'
+	                                'thundered bolts of raw power,\n'
+	                                'the lands erupted molten lava\n'
+	                                'of pure heat, and the oceans\n'
+	                                'boiled clouds of solid steam.')
+
+	sceneText.setPlacement(node.Placement(start=(0, 1.1, -2)))
+	d.registerObject(sceneText)
+
+	tl0.changeTimeline(makeRiseTween(d, sceneText, 1, node.Placement(start=(0, 1.3, -2))))
+
+	power = core.Text(d.next(), '                         er           pow       \n'
+                                '                      powe         power        \n'
+                                'power power power power power power   were power\n'
+                                '        wer                 er po               \n'
+                                '                               power po         \n')
+	powerGroup = core.Group('power')
+	powerGroup.addObject(power)
+	powerSystem = core.ParticleSystem(d.next())
+	powerActions = node.ParticleActionList(d.next())
+	powerSystem.actions = powerActions
+	powerActions.setRate(0.02)
+	powerGravity = node.Gravity()
+	powerGravity.setDirection((0, -0.5, 0))
+	powerActions.addAction(powerGravity)
+	powerSystem.particles = powerGroup
+	powerSource = node.Box()
+	powerSource.setP1((-3, 8, -3))
+	powerSource.setP2((3, 10, 3))
+	powerVel = node.Box()
+	powerVel.setP1((-1, -6, -1))
+	powerVel.setP2((1, -6, 1))
+	powerActions.setSource(powerSource)
+	powerActions.setVel(powerVel)
+	powerActions.setRemoveCondition(node.Age(2))
+	d.registerObject(power)
+	d.registerObject(powerSystem)
+	d.registerGroup(powerGroup)
+	d.registerParticleActions(powerSystem.actions)
+
+	powerSystem.key('Visibility', tl0)
+
+	tl0.advance(1)
+	powerSystem.set('Visibility', True)
+	powerSystem.key('Visibility', tl0)
+
+	return 'stillyoung', tl0
+
 d = core.Document()
 
-d.addScene(genScene0(d), True)
-d.addScene(genSceneInTheBeginning(d))
-d.addScene(genSceneRain(d))
-d.addScene(genSceneLands(d))
+#d.addScene(genScene0(d), True)
+#d.addScene(genSceneInTheBeginning(d))
+#d.addScene(genSceneRain(d))
+d.addScene(genSceneLands(d), True)
+d.addScene(genSceneStillYoung(d))
 
 d.save('exnihilo.xml')
