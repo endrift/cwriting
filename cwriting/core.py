@@ -10,6 +10,7 @@ class Document(object):
 		self._groups = []
 		self._times = []
 		self._pa = []
+		self._sounds = []
 		self._firstScene = None
 
 	def addScene(self, (name, rootTimeline), isFirst=False):
@@ -34,6 +35,9 @@ class Document(object):
 	def registerParticleActions(self, obj):
 		self._pa.append(obj)
 
+	def registerSound(self, obj):
+		self._sounds.append(obj)
+
 	def distill(self):
 		doc = node.Document()
 		story = node.Story()
@@ -49,6 +53,9 @@ class Document(object):
 
 		for pa in self._pa:
 			story.addParticleActions(pa)
+
+		for sound in self._sounds:
+			story.addSound(sound)
 
 		if self._firstScene:
 			first = Timeline('scene:_autostart', True)
@@ -118,6 +125,11 @@ class Timeline(object):
 	def changeTimeline(self, other, action='start'):
 		ta = node.TimedActions(self._time)
 		ta.addAction(node.TimerChange(other))
+		self._instants.append(ta)
+
+	def playSound(self, sound):
+		ta = node.TimedActions(self._time)
+		ta.addAction(node.SoundRef(sound))
 		self._instants.append(ta)
 
 	def startScene(self, scene):
@@ -255,6 +267,7 @@ class Object(object):
 		self._props.setBool('AroundSelfAxis', False)
 		self._props.setScalar('Scale', 1.0)
 		self.link = None
+		self.sound = None
 
 	def copyAttributes(self, other):
 		self._props.clear()

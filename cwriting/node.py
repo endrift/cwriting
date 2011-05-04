@@ -79,7 +79,8 @@ class Story(Node):
 			'groups': Node('GroupRoot'),
 			'timelines': Node('TimelineRoot'),
 			'placements': Node('PlacementRoot'),
-			'particleactions': Node('ParticleActionRoot')
+			'particleactions': Node('ParticleActionRoot'),
+			'sounds': Node('SoundRoot')
 		}
 		self.setAttr('version', version)
 		self.setAttr('last_xpath', last_xpath)
@@ -108,6 +109,9 @@ class Story(Node):
 	def addParticleActions(self, pa):
 		self._add('particleactions', pa)
 
+	def addSound(self, sound):
+		self._add('sounds', sound)
+
 class Object(Node):
 	def __init__(self, name, obj):
 		super(Object, self).__init__('Object')
@@ -117,11 +121,16 @@ class Object(Node):
 		self._props.copy(obj._props)
 		self._content = Node('Content')
 		self._link = obj.link
+		self._sound = obj.sound
 
 	def genNode(self, doc):
 		self.addChild(self._content)
 		if self._link:
 			self.addChild(self._link)
+		if self._sound:
+			s = Node('SoundRef')
+			s.setText(self._sound.name)
+			self.addChild(s)
 		return super(Object, self).genNode(doc)
 
 class Property(Node):
@@ -274,6 +283,33 @@ class Link(Node):
 		n.addChild(action)
 		self._root.addChild(n)
 
+class Sound(Node):
+	def __init__(self, name, filename):
+		super(Sound, self).__init__('Sound')
+		self.name = name
+		self.filename = filename
+		self.autostart = False
+		# TODO: be able to customize these
+		self._mode = Node('Mode')
+		self._mode.addChild(Node('Fixed'))
+		self.addChild(self._mode)
+		self._repeat = Node('Repeat')
+		self._repeat.addChild(Node('NoRepeat'))
+		self.addChild(self._repeat)
+		self._settings = Node('Settings')
+		self.addChild(self._settings)
+		self.freq = 1.0
+		self.volume = 1.0
+		self.pan = 0.0
+
+	def genNode(self, doc):
+		self.setAttr('name', self.name)
+		self.setAttr('filename', self.filename)
+		self._settings.setAttr('freq', self.freq)
+		self._settings.setAttr('volume', self.volume)
+		self._settings.setAttr('pan', self.pan)
+		return super(Sound, self).genNode(doc)
+
 class Global(Node):
 	def __init__(self):
 		super(Global, self).__init__('Global')
@@ -382,6 +418,11 @@ class TimerChange(Node):
 		self.setAttr('name', timer.name)
 		action = Node(kind)
 		self.addChild(action)
+
+class SoundRef(Node):
+	def __init__(self, sound):
+		super(SoundRef, self).__init__('SoundRef')
+		self.setAttr('name', sound.name)
 
 # Values
 
