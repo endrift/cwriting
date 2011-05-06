@@ -428,7 +428,7 @@ def genSceneLands(d):
 
 	tl0.playSound(sceneSound2)
 	tl0.changeTimeline(makeRiseTween(d, sceneText2, 1, node.Placement(start=(0, 1.3, -2))))
-	tl0.advance(5)
+	tl0.advance(15)
 
 	tl0.changeTimeline(makeFallTween(d, sceneText, 1, node.Placement(start=(0, 2.6, -2))))
 	tl0.changeTimeline(makeFallTween(d, sceneText2, 1, node.Placement(start=(0, 1.3, -2))))
@@ -490,28 +490,79 @@ def genSceneStillYoung(d):
 	powerSystem.actions = powerActions
 	powerActions.setRate(0.02)
 	powerGravity = node.Gravity()
-	powerGravity.setDirection((0, -0.5, 0))
+	powerGravity.setDirection((0, 0.05, 0))
 	powerActions.addAction(powerGravity)
 	powerSystem.particles = powerGroup
 	powerSource = node.Box()
-	powerSource.setP1((-3, 8, -3))
-	powerSource.setP2((3, 10, 3))
+	powerSource.setP1((-2, 6, -2))
+	powerSource.setP2((2, 8, 2))
 	powerVel = node.Box()
-	powerVel.setP1((-1, -6, -1))
-	powerVel.setP2((1, -6, 1))
+	powerVel.setP1((-0.5, -2, -0.5))
+	powerVel.setP2((0.5, -2, 0))
 	powerActions.setSource(powerSource)
 	powerActions.setVel(powerVel)
-	powerActions.setRemoveCondition(node.Age(2))
+	powerRemoveCondition = node.Plane()
+	powerRemoveCondition.setPoint((0, -10, 0))
+	powerRemoveCondition.setNormal((0, 1, 0))
+	powerActions.setRemoveCondition(node.Position(powerRemoveCondition))
 	d.registerObject(power)
 	d.registerObject(powerSystem)
 	d.registerGroup(powerGroup)
-	d.registerParticleActions(powerSystem.actions)
+	d.registerParticleActions(powerActions)
 
 	powerSystem.key('Visibility', tl0)
+
+	lava = core.Text(d.next(), 'lav')
+	lava.breakApart()
+	lavaGroup = lava.getGroup()
+	lavaActions = node.ParticleActionList(d.next())
+	lavaActions.setRate(10)
+	lavaGravity = node.Gravity()
+	lavaGravity.setDirection((0, -1, 0))
+	lavaActions.addAction(lavaGravity)
+	lavaSource = node.Plane()
+	lavaSource.setNormal((0, 1, 0))
+	lavaSource.setPoint((0, 0, 0))
+	lavaVel = node.Cone()
+	lavaVel.setApex((0, 0, 0))
+	lavaVel.setBaseCenter((0, 3, 0))
+	lavaVel.setRadius(1)
+	lavaActions.setSource(lavaSource)
+	lavaActions.setVel(lavaVel)
+	lavaRemoveCondition = node.Plane()
+	lavaRemoveCondition.setPoint((0, -0.1, 0))
+	lavaRemoveCondition.setNormal((0, 1, 0))
+	lavaActions.setRemoveCondition(node.Position(lavaRemoveCondition))
+	d.registerObject(lava)
+	d.registerGroup(lavaGroup)
+	d.registerParticleActions(lavaActions)
+
+	lavaSystem = core.ParticleSystem(d.next())
+	lavaSystem.sequential = False
+	lavaSystem.speed = 0.4
+	lavaSystem.actions = lavaActions
+	lavaSystem.particles = lavaGroup
+	lavaSystem.setPlacement(node.Placement(start=(-3.2, -4, -2.1)))
+	d.registerObject(lavaSystem)
+
+	lavaSystem2 = core.ParticleSystem(d.next())
+	lavaSystem2.sequential = False
+	lavaSystem2.speed = 0.4
+	lavaSystem2.actions = lavaActions
+	lavaSystem2.particles = lavaGroup
+	lavaSystem2.setPlacement(node.Placement(start=(-0.4, -4, -2.8)))
+	d.registerObject(lavaSystem2)
+
+	lavaSystem.key('Visibility', tl0)
+	lavaSystem2.key('Visibility', tl0)
 
 	tl0.advance(1)
 	powerSystem.set('Visibility', True)
 	powerSystem.key('Visibility', tl0)
+	lavaSystem.set('Visibility', True)
+	lavaSystem.key('Visibility', tl0)
+	lavaSystem2.set('Visibility', True)
+	lavaSystem2.key('Visibility', tl0)
 
 	return 'stillyoung', tl0
 
@@ -520,7 +571,7 @@ d = core.Document()
 #d.addScene(genScene0(d), True)
 #d.addScene(genSceneInTheBeginning(d))
 #d.addScene(genSceneRain(d))
-d.addScene(genSceneLands(d), True)
-d.addScene(genSceneStillYoung(d))
+#d.addScene(genSceneLands(d))
+d.addScene(genSceneStillYoung(d), True)
 
 d.save('exnihilo.xml')
