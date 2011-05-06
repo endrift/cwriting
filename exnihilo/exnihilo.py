@@ -84,7 +84,10 @@ def genScene0(d):
 	tl0.advance(0.5)
 	begin.setVisibility(True)
 	begin.keyVisibility(tl0)
-	
+
+	beginSfx = node.Sound(d.next(), './res/00_s00.mp3')
+	d.registerSound(beginSfx)
+	tlBegin.playSound(beginSfx)
 	exnihilo.keyVisibility(tlBegin)
 	exnihiloTweenOut = core.CurveTweener()
 	exnihiloTweenOut.setObject(exnihilo, 'Placement', node.Placement(start=(0, 4, -2)))
@@ -92,8 +95,8 @@ def genScene0(d):
 	exnihiloTweenOut.tween(2)
 	d.registerTimeline(exnihiloTweenOut.getTimeline())
 	tlBegin.changeTimeline(exnihiloTweenOut.getTimeline())
-	
-	
+
+
 	tlBegin.advance(1)
 	begin.keyVisibility(tlBegin)
 	tlBegin.advance(1)
@@ -231,6 +234,15 @@ def genSceneRain(d):
 	d.registerSound(sceneSound)
 	d.registerSound(sceneSound2)
 
+	rainSfx = node.Sound(d.next(), './res/02_s00.mp3')
+	rainSfx.freq = 0.6
+	rainSfx.volume = 0.3
+	d.registerSound(rainSfx)
+
+	tlRain = core.Timeline(d.next())
+	d.registerTimeline(tlRain)
+	#tl0.changeTimeline(tlRain)
+
 	s = []
 	text = 'the rains fell, the seas filled, '
 	for y in range(12):
@@ -261,6 +273,7 @@ def genSceneRain(d):
 	theRainsPSource = node.Disc()
 	theRainsPSource.setCenter((0, 8, 0))
 	theRainsPSource.setNormal((0.2, -1.0, 0))
+	theRainsPSource.setRadius(8)
 	theRainsPVel = node.Point()
 	theRainsPVel.setPoint((-1, -3, -2))
 	theRainsPActions.setSource(theRainsPSource)
@@ -297,6 +310,7 @@ def genSceneRain(d):
 	d.registerTimeline(sceneTextTweenIn.getTimeline())
 	tl0.changeTimeline(sceneTextTweenIn.getTimeline())
 	tl0.playSound(sceneSound)
+	tl0.playSound(rainSfx)
 
 	tl0.advance(1)
 	theRainsG.set('Visibility', True)
@@ -320,6 +334,11 @@ def genSceneRain(d):
 	tl0.advance(1)
 	sceneText2.setVisibility(True)
 	sceneText2.keyVisibility(tl0)
+
+	#for i in xrange(int(tl0.current()/0.5)):
+	#	tlRain.playSound(rainSfx)
+	#	tlRain.advance(0.5)
+
 	tl0.advance(2)
 	theRainsPSystem.set('Visibility', False)
 	theRainsPSystem.key('Visibility', tl0)
@@ -568,10 +587,10 @@ def genSceneStillYoung(d):
 
 d = core.Document()
 
-#d.addScene(genScene0(d), True)
-#d.addScene(genSceneInTheBeginning(d))
-#d.addScene(genSceneRain(d))
+d.addScene(genScene0(d), True)
+d.addScene(genSceneInTheBeginning(d))
+d.addScene(genSceneRain(d))
 #d.addScene(genSceneLands(d))
-d.addScene(genSceneStillYoung(d), True)
+#d.addScene(genSceneStillYoung(d), True)
 
 d.save('exnihilo.xml')
