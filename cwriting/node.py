@@ -235,7 +235,6 @@ class Group(Node):
 		self.setAttr('name', name)
 
 	def addObject(self, obj):
-		self.clearChildren()
 		n = Node('Objects')
 		n.setAttr('name', obj.name)
 		self.addChild(n)
@@ -620,26 +619,18 @@ class Point(ParticleDomain):
 	def setPoint(self, (x, y, z)):
 		self._domProps.getProperty('point').setValue((x, y, z))
 
-class Disc(ParticleDomain):
+class Plane(ParticleDomain):
 	def __init__(self):
-		super(Disc, self).__init__()
-		self._dom = Node('Disc')
-		self._domProps.setCoord('center', (0, 0, 0))
-		self._domProps.setCoord('normal', (0, -1, 0))
-		self._domProps.setScalar('radius', 4.0)
-		self._domProps.setScalar('radius-inner', 0.0)
+		super(Plane, self).__init__()
+		self._dom = Node('Plane')
+		self._domProps.setCoord('point', (0, 0, 0))
+		self._domProps.setCoord('normal', (0, 1, 0))
 
-	def setCenter(self, (x, y, z)):
-		self._domProps.getProperty('center').setValue((x, y, z))
+	def setPoint(self, (x, y, z)):
+		self._domProps.getProperty('point').setValue((x, y, z))
 
 	def setNormal(self, (x, y, z)):
 		self._domProps.getProperty('normal').setValue((x, y, z))
-
-	def setRadius(self, r):
-		self._domProps.getProperty('radius').setValue(r)
-
-	def setRadiusInner(self, r):
-		self._domProps.getProperty('radius-inner').setValue(r)
 
 class Box(ParticleDomain):
 	def __init__(self):
@@ -653,6 +644,48 @@ class Box(ParticleDomain):
 
 	def setP2(self, (x, y, z)):
 		self._domProps.getProperty('p2').setValue((x, y, z))
+
+class Cone(ParticleDomain):
+	def __init__(self):
+		super(Cone, self).__init__()
+		self._dom = Node('Cone')
+		self._domProps.setCoord('base-center', (0, 0, 0))
+		self._domProps.setCoord('apex', (0, 1, 0))
+		self._domProps.setScalar('radius', 1.0)
+		self._domProps.setScalar('radius-inner', 0.0)
+
+	def setBaseCenter(self, (x, y, z)):
+		self._domProps.getProperty('base-center').setValue((x, y, z))
+
+	def setApex(self, (x, y, z)):
+		self._domProps.getProperty('apex').setValue((x, y, z))
+
+	def setRadius(self, r):
+		self._domProps.getProperty('radius').setValue(r)
+
+	def setRadiusInner(self, r):
+		self._domProps.getProperty('radius-inner').setValue(r)
+
+class Disc(ParticleDomain):
+	def __init__(self):
+		super(Disc, self).__init__()
+		self._dom = Node('Disc')
+		self._domProps.setCoord('center', (0, 0, 0))
+		self._domProps.setCoord('normal', (0, 1, 0))
+		self._domProps.setScalar('radius', 1.0)
+		self._domProps.setScalar('radius-inner', 0.0)
+
+	def setCenter(self, (x, y, z)):
+		self._domProps.getProperty('center').setValue((x, y, z))
+
+	def setNormal(self, (x, y, z)):
+		self._domProps.getProperty('normal').setValue((x, y, z))
+
+	def setRadius(self, r):
+		self._domProps.getProperty('radius').setValue(r)
+
+	def setRadiusInner(self, r):
+		self._domProps.getProperty('radius-inner').setValue(r)
 
 # ParticleActions
 
@@ -699,3 +732,9 @@ class Age(RemoveCondition):
 		self._rc = Node('Age')
 		self._rcProps.setScalar('age', age)
 		self._rcProps.setBool('younger-than', youngerThan)
+
+class Position(RemoveCondition):
+	def __init__(self, dom, inside=False):
+		super(Position, self).__init__()
+		self._rc = Node('Position')
+		self._rc.addChild(dom)
