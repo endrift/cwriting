@@ -287,10 +287,10 @@ class Link(Node):
 
 	def addAction(self, action):
 		n = Node('Actions')
-		clicks = Node('Clicks')
-		a = Node('any')
-		clicks.addChild(a)
-		n.addChild(clicks)
+		#clicks = Node('Clicks')
+		#a = Node('any')
+		#clicks.addChild(a)
+		#n.addChild(clicks)
 		n.addChild(action)
 		self._root.addChild(n)
 

@@ -158,6 +158,44 @@ def genScene0(d):
 		'timeline': tl0
 	}
 
+def genSceneEnd(d):
+	tl0 = core.Timeline(d.next())
+	d.registerTimeline(tl0)
+
+	tl = core.Timeline(d.next())
+	d.registerTimeline(tl)
+
+	t = core.Text(d.next(), 'restart')
+	t.setPlacement(node.Placement(start=(0, 0, -2)))
+	t.link = node.Link()
+	t.link.addAction(node.TimerChange(tl, 'start'))
+	d.registerObject(t)
+
+	tl0.advance(1)
+
+	t.keyVisibility(tl0)
+	tl0.advance(1)
+	t.setVisibility(True)
+	t.keyVisibility(tl0)
+	t.keyVisibility(tl)
+
+	tTweenOut = core.CurveTweener()
+	tTweenOut.setObject(t, 'Placement', node.Placement(start=(0, 0, 4)))
+	tTweenOut.setCurve(curve.quadIn3)
+	tTweenOut.tween(2)
+	d.registerTimeline(tTweenOut.getTimeline())
+	tl.changeTimeline(tTweenOut.getTimeline())
+	tl.advance(2)
+	t.setVisibility(False)
+	t.keyVisibility(tl)
+	tl.advance(1)
+	tl.restart()
+
+	return {
+		'name': 'end',
+		'timeline': tl0
+	}
+
 def genSceneInTheBeginning(d):
 	tl0 = core.Timeline('scene:inTheBeginning')
 	d.registerTimeline(tl0)
@@ -535,6 +573,8 @@ def genSceneLands(d):
 	mountain02.setVisibility(False)
 	mountain02.keyVisibility(tl0)
 
+	tl0.advance(0.2)
+
 	return {
 		'name': 'lands',
 		'longname': 'The Lands',
@@ -546,7 +586,7 @@ def genSceneStillYoung(d):
 	d.registerTimeline(tl0)
 	sceneText = core.Text(d.next(), 'The world was still young,\n'
 	                                'and restless. For eons, the\n'
-	                                'skies battled against its\n'
+	                                'skies battled against their\n'
 	                                'younger siblings. The skies\n'
 	                                'thundered bolts of raw power,\n'
 	                                'the lands erupted molten lava\n'
@@ -556,6 +596,16 @@ def genSceneStillYoung(d):
 	sceneText.setPlacement(node.Placement(start=(0, 1.1, -2)))
 	d.registerObject(sceneText)
 
+	sceneSound = node.Sound(d.next(), './res/04_l00.mp3')
+	d.registerSound(sceneSound)
+
+	sceneSfx = node.Sound(d.next(), './res/04_s00.mp3')
+	sceneSfx.volume = 0.3
+	d.registerSound(sceneSfx)
+
+	tl0.playSound(sceneSfx)
+	tl0.advance(0.5)
+	tl0.playSound(sceneSound)
 	tl0.changeTimeline(makeRiseTween(d, sceneText, 1, node.Placement(start=(0, 1.3, -2))))
 
 	power = core.Text(d.next(), '                         er           pow       \n'
@@ -630,11 +680,55 @@ def genSceneStillYoung(d):
 	lavaSystem2.speed = 0.4
 	lavaSystem2.actions = lavaActions
 	lavaSystem2.particles = lavaGroup
-	lavaSystem2.setPlacement(node.Placement(start=(-0.4, -4, -2.8)))
+	lavaSystem2.setPlacement(node.Placement(start=(-0.2, -4, -2.8)))
 	d.registerObject(lavaSystem2)
 
 	lavaSystem.key('Visibility', tl0)
 	lavaSystem2.key('Visibility', tl0)
+
+	steam = core.Text(d.next(), 'steam')
+	steamGroup = core.Group('steam')
+	steamGroup.addObject(steam)
+	steamActions = node.ParticleActionList(d.next())
+	steamActions.setRate(1)
+	steamGravity = node.Gravity()
+	steamGravity.setDirection((0, 0.1, 0))
+	steamActions.addAction(steamGravity)
+	steamSource = node.Disc()
+	steamSource.setCenter((0, 0, 0))
+	steamSource.setNormal((0, -1, 0))
+	steamSource.setRadius(1)
+	steamVel = node.Disc()
+	steamVel.setCenter((0, 0.1, 0))
+	steamVel.setNormal((0, -1, 0))
+	steamVel.setRadius(0.2)
+	steamActions.setSource(steamSource)
+	steamActions.setVel(steamVel)
+	steamActions.setRemoveCondition(node.Age(14))
+	d.registerObject(steam)
+	d.registerGroup(steamGroup)
+	d.registerParticleActions(steamActions)
+
+	steamSystem = core.ParticleSystem(d.next())
+	steamSystem.sequential = False
+	steamSystem.lookAtCamera = True
+	steamSystem.speed = 0.1
+	steamSystem.actions = steamActions
+	steamSystem.particles = steamGroup
+	steamSystem.setPlacement(node.Placement(start=(1.4, -4, -3.4)))
+	d.registerObject(steamSystem)
+
+	steamSystem2 = core.ParticleSystem(d.next())
+	steamSystem2.sequential = False
+	steamSystem2.lookAtCamera = True
+	steamSystem2.speed = 0.1
+	steamSystem2.actions = steamActions
+	steamSystem2.particles = steamGroup
+	steamSystem2.setPlacement(node.Placement(start=(3.4, -4, -2.3)))
+	d.registerObject(steamSystem2)
+
+	steamSystem.key('Visibility', tl0)
+	steamSystem2.key('Visibility', tl0)
 
 	tl0.advance(1)
 	powerSystem.set('Visibility', True)
@@ -643,6 +737,34 @@ def genSceneStillYoung(d):
 	lavaSystem.key('Visibility', tl0)
 	lavaSystem2.set('Visibility', True)
 	lavaSystem2.key('Visibility', tl0)
+	steamSystem.set('Visibility', True)
+	steamSystem.key('Visibility', tl0)
+	steamSystem2.set('Visibility', True)
+	steamSystem2.key('Visibility', tl0)
+
+	tl0.advance(18)
+	
+	sceneText.key('Visibility', tl0)
+	powerSystem.key('Visibility', tl0)
+	lavaSystem.key('Visibility', tl0)
+	lavaSystem2.key('Visibility', tl0)
+	steamSystem.key('Visibility', tl0)
+	steamSystem2.key('Visibility', tl0)
+
+	tl0.advance(1)
+
+	sceneText.set('Visibility', False)
+	sceneText.key('Visibility', tl0)
+	powerSystem.set('Visibility', False)
+	powerSystem.key('Visibility', tl0)
+	lavaSystem.set('Visibility', False)
+	lavaSystem.key('Visibility', tl0)
+	lavaSystem2.set('Visibility', False)
+	lavaSystem2.key('Visibility', tl0)
+	steamSystem.set('Visibility', False)
+	steamSystem.key('Visibility', tl0)
+	steamSystem2.set('Visibility', False)
+	steamSystem2.key('Visibility', tl0)
 
 	return {
 		'name': 'stillyoung',
@@ -662,6 +784,9 @@ scenes = [genSceneInTheBeginning(d),
 for s in scenes:
 	d.addScene(s)
 
-d.addScene(genSceneList(d))
+d.addScene(genSceneEnd(d))
+
+# Scenes don't have a good method for resetting
+#d.addScene(genSceneList(d))
 
 d.save('exnihilo.xml')
