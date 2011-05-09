@@ -373,6 +373,10 @@ def genSceneLands(d):
 	d.registerSound(sceneSound)
 	d.registerSound(sceneSound2)
 
+	sceneSfx = node.Sound(d.next(), './res/03_s00.mp3')
+	sceneSfx.volume = 0.7
+	d.registerSound(sceneSfx)
+
 	waterText = core.Text(d.next(), 'Into the horizon, into the eternity, the\n'
 	                                'waters spread forever. North, south, east,\n'
 	                                'and west: in all directions, the waters\n'
@@ -401,6 +405,7 @@ def genSceneLands(d):
 
 	tl0.changeTimeline(makeRiseTween(d, sceneText, 1, node.Placement(start=(0, 2.6, -2))))
 	tl0.playSound(sceneSound)
+	tl0.playSound(sceneSfx)
 	tl0.advance(1)
 
 	waterText.setVisibility(True)
@@ -590,7 +595,7 @@ d = core.Document()
 d.addScene(genScene0(d), True)
 d.addScene(genSceneInTheBeginning(d))
 d.addScene(genSceneRain(d))
-#d.addScene(genSceneLands(d))
-#d.addScene(genSceneStillYoung(d), True)
+d.addScene(genSceneLands(d))
+d.addScene(genSceneStillYoung(d))
 
 d.save('exnihilo.xml')
