@@ -40,6 +40,52 @@ def makeFallTween(d, obj, duration, real, diff=node.Placement(start=(0, -0.2, 0)
 	obj.keyVisibility(tl)
 	return tl
 
+def genSceneList(d):
+	tl0 = core.Timeline(d.next())
+	d.registerTimeline(tl0)
+
+	enable = core.Timeline('_linksEnable')
+	d.registerTimeline(enable)
+
+	disable = core.Timeline('_linksDisable')
+	d.registerTimeline(disable)
+
+	scenes = d.getScenes()
+	y = 0
+	for s in scenes:
+		t = core.Text(d.next(), s['longname'])
+		enable.changeLink(t, True)
+		disable.changeLink(t, False)
+
+		p = node.Placement(start=(0, 0.3*(len(scenes) / 2.0 - y), 0))
+		p.relativeTo = 'RightWall'
+		t.setPlacement(p)
+
+		tl = core.Timeline(d.next())
+		d.registerTimeline(tl)
+		tl.changeTimeline(disable)
+		tl.startScene(s['name'])
+		tl.advance(s['timeline'].current())
+		tl.changeTimeline(enable)
+
+		t.link = node.Link()
+		t.link.addAction(node.TimerChange(tl, 'start'))
+		d.registerObject(t)
+		t.keyVisibility(tl0)
+		s['text'] = t
+		y += 1
+
+	tl0.advance(1)
+
+	for s in scenes:
+		s['text'].setVisibility(True)
+		s['text'].keyVisibility(tl0)
+
+	return {
+		'name': '_list',
+		'timeline': tl0
+	}
+
 def genScene0(d):
 	tl0 = core.Timeline(d.next())
 	d.registerTimeline(tl0)
@@ -105,12 +151,15 @@ def genScene0(d):
 	tlBegin.advance(1)
 	begin.setVisibility(False)
 	begin.keyVisibility(tlBegin)
-	tlBegin.startScene('inTheBeginning')
+	tlBegin.startScenes(d)
 
-	return 'begin', tl0
+	return {
+		'name': 'begin', 
+		'timeline': tl0
+	}
 
 def genSceneInTheBeginning(d):
-	tl0 = core.Timeline(d.next())
+	tl0 = core.Timeline('scene:inTheBeginning')
 	d.registerTimeline(tl0)
 
 	tl0.advance(1)
@@ -199,15 +248,17 @@ def genSceneInTheBeginning(d):
 	d.registerTimeline(tlFromNothingOut2)
 	tl0.changeTimeline(tlFromNothingOut2)
 	tl0.advance(4)
-	tl0.startScene('rain')
 
-	return 'inTheBeginning', tl0
+	return {'name': 'inTheBeginning',
+		'longname': 'In The Beginning',
+		'timeline': tl0
+	}
 
 def genSceneRain(d):
 	def waves(n):
 		return (lambda s, t: 0.2*math.sin(n)*(math.sin(2.5*s+n) + math.sin(2.5*t+n)) + (t-1)*(t-1)*0.1 + n/3.5 - 3.0)
 
-	tl0 = core.Timeline(d.next())
+	tl0 = core.Timeline('scene:rain')
 	d.registerTimeline(tl0)
 
 	sceneText = core.Text(d.next(), 'First, the rains rained and the\n'
@@ -347,12 +398,15 @@ def genSceneRain(d):
 	tl0.changeTimeline(makeFallTween(d, sceneText, 1, node.Placement(start=(0, 2.2, -2))))
 	tl0.changeTimeline(makeFallTween(d, sceneText2, 1, node.Placement(start=(0, 0.7, -2))))
 	tl0.advance(1)
-	tl0.startScene('lands')
 
-	return 'rain', tl0
+	return {
+		'name': 'rain',
+		'longname': 'The Rains',
+		'timeline': tl0
+	}
 
 def genSceneLands(d):
-	tl0 = core.Timeline(d.next())
+	tl0 = core.Timeline('scene:lands')
 	d.registerTimeline(tl0)
 
 	sceneText = core.Text(d.next(), 'But the oceans were unending.')
@@ -481,12 +535,14 @@ def genSceneLands(d):
 	mountain02.setVisibility(False)
 	mountain02.keyVisibility(tl0)
 
-	tl0.startScene('stillyoung')
-
-	return 'lands', tl0
+	return {
+		'name': 'lands',
+		'longname': 'The Lands',
+		'timeline': tl0
+	}
 
 def genSceneStillYoung(d):
-	tl0 = core.Timeline(d.next())
+	tl0 = core.Timeline('scene:stillyoung')
 	d.registerTimeline(tl0)
 	sceneText = core.Text(d.next(), 'The world was still young,\n'
 	                                'and restless. For eons, the\n'
@@ -588,14 +644,24 @@ def genSceneStillYoung(d):
 	lavaSystem2.set('Visibility', True)
 	lavaSystem2.key('Visibility', tl0)
 
-	return 'stillyoung', tl0
+	return {
+		'name': 'stillyoung',
+		'longname': 'The Battles',
+		'timeline': tl0
+	}
 
 d = core.Document()
 
-d.addScene(genScene0(d), True)
-d.addScene(genSceneInTheBeginning(d))
-d.addScene(genSceneRain(d))
-d.addScene(genSceneLands(d))
-d.addScene(genSceneStillYoung(d))
+d.setTitleScene(genScene0(d))
+
+scenes = [genSceneInTheBeginning(d),
+          genSceneRain(d),
+          genSceneLands(d),
+          genSceneStillYoung(d)]
+
+for s in scenes:
+	d.addScene(s)
+
+d.addScene(genSceneList(d))
 
 d.save('exnihilo.xml')

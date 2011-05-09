@@ -11,17 +11,21 @@ class Document(object):
 		self._times = []
 		self._pa = []
 		self._sounds = []
-		self._firstScene = None
+		self._scenes = []
+		self._rootTimeline = Timeline('_root')
+		self._titleScene = None
+		self.registerTimeline(self._rootTimeline)
 
-	def addScene(self, (name, rootTimeline), isFirst=False):
-		t = Timeline('scene:' + name)
-		self.registerTimeline(t)
-		t.changeTimeline(rootTimeline)
-		if isFirst:
-			self._firstScene = rootTimeline
+	def addScene(self, scene):
+		self._scenes.append(scene)
+		self._rootTimeline.changeTimeline(scene['timeline'])
+		self._rootTimeline.advance(scene['timeline'].current())
 
-	def setFirstScene(self, scene):
-		self._firstScene = scene
+	def getScenes(self):
+		return list(self._scenes)
+
+	def setTitleScene(self, scene):
+		self._titleScene = scene
 
 	def registerObject(self, obj):
 		self._objs.append(copy.deepcopy(obj))
@@ -57,10 +61,10 @@ class Document(object):
 		for sound in self._sounds:
 			story.addSound(sound)
 
-		if self._firstScene:
-			first = Timeline('scene:_autostart', True)
-			first.changeTimeline(self._firstScene)
-			story.addTimeline(first.distill())
+		if self._titleScene:
+			tl = Timeline('_autostart', True)
+			tl.changeTimeline(self._titleScene['timeline'])
+			story.addTimeline(tl.distill())
 
 		doc.setRoot(story.genNode(doc.getNode()))
 		return doc
@@ -127,6 +131,13 @@ class Timeline(object):
 		ta.addAction(node.TimerChange(other))
 		self._instants.append(ta)
 
+	def changeLink(self, link, enable):
+		ta = node.TimedActions(self._time)
+		o = node.ObjectChange(link)
+		o.addChild(node.LinkChange('link_' + ('on' if enable else 'off')))
+		ta.addAction(o)
+		self._instants.append(ta)
+
 	def playSound(self, sound):
 		ta = node.TimedActions(self._time)
 		ta.addAction(node.SoundRef(sound))
@@ -136,6 +147,9 @@ class Timeline(object):
 		# lolhax
 		s = Timeline('scene:' + scene)
 		self.changeTimeline(s)
+
+	def startScenes(self, d):
+		self.changeTimeline(d._rootTimeline)
 
 	def freeze(self, loop=False):
 		self._changes = []

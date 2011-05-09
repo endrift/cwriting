@@ -94,6 +94,18 @@ class Story(Node):
 		center = Placement('Center')
 		self._add('placements', center)
 
+		frontWall = Placement('FrontWall', start=(0, 0, -4), rotation=LookAt(up=(0, 1, 0)))
+		self._add('placements', frontWall)
+
+		leftWall = Placement('LeftWall', start=(-4, 0, 0), rotation=LookAt(up=(0, 1, 0)))
+		self._add('placements', leftWall)
+
+		rightWall = Placement('RightWall', start=(4, 0, 0), rotation=LookAt(up=(0, 1, 0)))
+		self._add('placements', rightWall)
+
+		floorWall = Placement('FloorWall', start=(0, -4, 0), rotation=LookAt(up=(0, 0, -1)))
+		self._add('placements', floorWall)
+
 	def _add(self, root, node):
 		self._roots[root].addChild(node)
 
@@ -231,8 +243,8 @@ class Placement(Property):
 class Group(Node):
 	def __init__(self, name):
 		super(Group, self).__init__('Group')
-		self.name = name
-		self.setAttr('name', name)
+		self.name = str(name)
+		self.setAttr('name', self.name)
 
 	def addObject(self, obj):
 		n = Node('Objects')
@@ -242,8 +254,8 @@ class Group(Node):
 class Timeline(Node):
 	def __init__(self, name, autostart=False):
 		super(Timeline, self).__init__('Timeline')
-		self.name = name
-		self.setAttr('name', name)
+		self.name = str(name)
+		self.setAttr('name', self.name)
 		self.setAttrFromNode(Boolean('start-immediately', autostart))
 
 	def addAction(self, start, action):
@@ -410,6 +422,13 @@ class Movement(Transition):
 		move = Node('Movement')
 		move.addChild(newloc)
 		self.addChild(move)
+
+class LinkChange(Transition):
+	def __init__(self, action='link_off'):
+		super(LinkChange, self).__init__(0)
+		change = Node('LinkChange')
+		change.addChild(Node(action))
+		self.addChild(change)
 
 class TimerChange(Node):
 	def __init__(self, timer, kind='start'):
