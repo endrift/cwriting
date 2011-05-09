@@ -442,6 +442,10 @@ class SoundRef(Node):
 		super(SoundRef, self).__init__('SoundRef')
 		self.setAttr('name', sound.name)
 
+class Restart(Node):
+	def __init__(self):
+		super(Restart, self).__init__('Restart')
+
 # Values
 
 class Value(Property):

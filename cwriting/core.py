@@ -3,6 +3,12 @@ import copy
 import curve
 import math
 
+# Caution: This code is pretty poorly planned out, and thus there are a lot of
+#          problems with the design. At some point, I stopped caring so much,
+#          so a lot of this is pretty hard to use or too specific.
+#
+# Use at your own risk!
+
 class Document(object):
 	def __init__(self):
 		self._x = 0
@@ -150,6 +156,11 @@ class Timeline(object):
 
 	def startScenes(self, d):
 		self.changeTimeline(d._rootTimeline)
+
+	def restart(self):
+		ta = node.TimedActions(self._time)
+		ta.addAction(node.Restart())
+		self._instants.append(ta)
 
 	def freeze(self, loop=False):
 		self._changes = []
