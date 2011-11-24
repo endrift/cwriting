@@ -415,6 +415,7 @@ class MoveRel(Transition):
 		super(MoveRel, self).__init__(duration)
 		move = Node('MoveRel')
 		move.addChild(delta)
+		self.addChild(move)
 
 class Movement(Transition):
 	def __init__(self, duration, newloc):
