@@ -396,7 +396,7 @@ class Text(Object):
 		else:
 			tweenSet.addTween(None)
 
-	def breakApart(self, curve=None):
+	def breakApart(self, curve=None, words=False):
 		# TODO set scale
 		xOffset = 0.18*self.getScale()
 		yOffset = 0.28*self.getScale()
@@ -414,7 +414,8 @@ class Text(Object):
 		self._letters = []
 		lineCollect = []
 		i, j, k = (0, 0, 0)
-		for c in self._text:
+		source = self._text if not words else self._text.split(' ')
+		for c in source:
 			if c == '\n':
 				i = 0
 				j += 1
@@ -428,6 +429,7 @@ class Text(Object):
 				else:
 					l = Text('%s_%05d' % (self.name, k), c)
 					l.copyAttributes(self)
+					l.halign = self.halign
 					if curve:
 						offset = curve(i, j)
 						l.getPlacement().move(offset)
@@ -437,11 +439,11 @@ class Text(Object):
 					k += 1
 				self._letters.append(l)
 				lineCollect.append(l)
-				i += 1
+				i += len(c)
 
 		collect(lineCollect)
 
-		# Realing columns
+		# Realign columns
 		offset = None
 		if self.valign == 'center':
 			offset = node.Placement(start=(0, (j+0)*0.5*yOffset, 0))
